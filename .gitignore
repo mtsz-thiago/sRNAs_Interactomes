@@ -163,3 +163,7 @@ cython_debug/
 .nextflow.log*
 .nextflow/
 work/
+
+#data files
+!data/datasets_ids.csv
+data/

@@ -2,6 +2,7 @@ FROM "mcr.microsoft.com/devcontainers/base:bullseye"
 
 RUN apt update && apt install -y \
     curl \
+    git-flow \
     # git \
     # python3 \
     # python3-pip \

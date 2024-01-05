@@ -167,3 +167,4 @@ work/
 #data files
 !data/datasets_ids.csv
 data/
+data.zip

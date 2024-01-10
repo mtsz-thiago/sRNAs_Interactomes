@@ -13,13 +13,21 @@ Repository for workflows, data analysis, and everything related to sRNA interact
 
 ### Data
 
+
 Liu, et al. [1] has made his interactome dataset abailable on [Geo Database](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE234792) we are going to experiment on this dataset. We will use [nf-core/fetchngs](https://nf-co.re/fetchngs/1.11.0) workflow to fetch such data. [fetch_data.sh](./fetch_data.sh) uses this workflow to download data from GEO database with following workflow call:
+
+#### Raw Data
 
 ```bash
 nextflow run -resume nf-core/fetchngs \
    --input ./data/datasets_ids.csv \
    --outdir ./data
 ```
+
+#### Suplementaru Data
+
+https://www.nature.com/articles/s41467-023-43632-1#additional-information
+
 
 ## References
 

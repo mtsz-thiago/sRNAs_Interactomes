@@ -166,5 +166,6 @@ work/
 
 #data files
 !data/datasets_ids.csv
+!data/sup_data_Urls.csv
 data/
 data.zip

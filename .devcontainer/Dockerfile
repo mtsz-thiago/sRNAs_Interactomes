@@ -4,9 +4,9 @@ RUN apt update && apt install -y \
     curl \
     git-flow \
     # git \
-    # python3 \
-    # python3-pip \
-    # python3-venv \
+    python3 \
+    python3-pip \
+    python3-venv \
     openjdk-11-jdk \
     && apt clean -y && rm -rf /var/lib/apt/lists/*
 

@@ -25,7 +25,9 @@
 				"GitHub.copilot-chat",
 				"vscjava.vscode-java-pack",
 				"nextflow.nextflow",
-				"Serhioromano.vscode-gitflow"
+				"Serhioromano.vscode-gitflow",
+				"donjayamanne.python-extension-pack",
+				"ms-toolsai.jupyter"
 			]
 		}
 	}

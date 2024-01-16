@@ -1,23 +1,24 @@
 #!/usr/bin/env nextflow
  
 params.queries_files = [
-    // "$baseDir/output/queries/EP_RNA1.fa", 
-    // "$baseDir/output/queries/EP_RNA2.fa", 
+    "$baseDir/output/queries/EP_RNA1.fa", 
+    "$baseDir/output/queries/EP_RNA2.fa", 
     "$baseDir/output/queries/ESP_RNA1.fa",
     "$baseDir/output/queries/ESP_RNA2.fa",
     "$baseDir/output/queries/SP_RNA1.fa",
     "$baseDir/output/queries/SP_RNA2.fa"]
 
 params.output_dir = "$baseDir/output"
+params.queries_files_chunk_sizes = 10
 
 process align {
     container 'ncbi/blast'
 
     input:
-    file query_file
+    path query_file
 
     output:
-    file "alignments_results.txt"
+    path "alignments_results.txt"
 
     script:
     """
@@ -26,9 +27,13 @@ process align {
 }
 
 workflow {
-    queries_ch = Channel.fromPath(params.queries_files)
+    queries_ch = Channel
+                    .fromPath(params.queries_files)
+                    .splitFasta(by: params.queries_files_chunk_sizes, file:true)
     
     aligments_ch = align(queries_ch)
 
-    aligments_ch.view()
+    aligments_ch.collectFile(
+        name: "all_results.txt", 
+        keepHeader: true, storeDir: params.output_dir)
 }

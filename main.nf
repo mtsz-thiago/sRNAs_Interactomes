@@ -1,17 +1,34 @@
 #!/usr/bin/env nextflow
  
-params.interactome_files = [
-    "$baseDir/data/EP.csv", 
-    "$baseDir/data/ESP.csv",
-    "$baseDir/data/SP.csv"]
+params.queries_files = [
+    // "$baseDir/output/queries/EP_RNA1.fa", 
+    // "$baseDir/output/queries/EP_RNA2.fa", 
+    "$baseDir/output/queries/ESP_RNA1.fa",
+    "$baseDir/output/queries/ESP_RNA2.fa",
+    "$baseDir/output/queries/SP_RNA1.fa",
+    "$baseDir/output/queries/SP_RNA2.fa"]
+
 params.output_dir = "$baseDir/output"
 
+process align {
+    container 'ncbi/blast'
+
+    input:
+    file query_file
+
+    output:
+    file "alignments_results.txt"
+
+    script:
+    """
+    blastn -query ${query_file} -db nt -remote -out alignments_results.txt -outfmt 6
+    """
+}
 
 workflow {
-    interactome_data_ch = Channel.fromPath(params.interactome_files)
-        | splitCsv( sep: ',', header: true )
-        // | view
-        | map( row -> ">${row['RNA1 name']}\n${row['RNA1 seq']}\n>${row[1]}\n${row[18]}\n")
-        
-    interactome_data_ch.collectFile(name: "query.fa", storeDir: params.output_dir)
+    queries_ch = Channel.fromPath(params.queries_files)
+    
+    aligments_ch = align(queries_ch)
+
+    aligments_ch.view()
 }

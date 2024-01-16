@@ -38,25 +38,25 @@ def map_SeqRecords_to_fasta(seq_records):
     return bio_dfs
 
 def write_fasta(seq_records, output):
-    for k, df in seq_records.items():
-        SeqIO.write(df, f"{output}/{k}.fasta", "fasta")
-
-def main(input_files, output):
     
-    if not os.path.exists(output): 
-        os.makedirs(output)
+    for k, df in seq_records.items():
+        SeqIO.write(df, f"{output}/{k}.fa", "fasta")
+
+def main(input_files, output_dir):    
+    if not os.path.exists(output_dir): 
+        os.makedirs(output_dir)
             
     input_files_dict = load_inputs(input_files)
     seg_records_dict = map_SeqRecords_to_fasta(input_files_dict)
-    write_fasta(seg_records_dict, output)
+    write_fasta(seg_records_dict, output_dir)
    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert supplementary data to FASTA format.")
     parser.add_argument("-i", "--inputs", nargs="+", help="Input CSV files")
-    parser.add_argument("-o", "--output", help="Output directory")
+    parser.add_argument("-o", "--output_dir", default=os.getcwd(), help="output_dir directory")
     args = parser.parse_args()
-    main(args.inputs, args.output)
+    main(args.inputs, args.output_dir)
 
 
 

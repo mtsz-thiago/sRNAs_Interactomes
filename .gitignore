@@ -163,3 +163,6 @@ cython_debug/
 .nextflow.log*
 .nextflow/
 work/
+!output/quries
+output/
+data/

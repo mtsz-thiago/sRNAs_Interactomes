@@ -21,46 +21,81 @@ process downloadSalmonellaGenome {
     val species_on_dataset
 
     output:
-    path "salmonella_genome.gzip"
+    path "salmonella_genome.fna.gz"
 
     script:
     """
-    curl -o salmonella_genome.gzip https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/GCF_000006945.2/download?include_annotation_type=GENOME_FASTA
+    curl -o salmonella_genome.fna.gz https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/945/GCF_000006945.2_ASM694v2/GCF_000006945.2_ASM694v2_genomic.fna.gz
     """
 }
 
-process align {
+process makeBlastDB {
+    container 'ncbi/blast'
+
+    input:
+    path genome_file
+
+    output:
+    path "SalmonellaDB"
+
+    script:
+    """
+    mkdir -p 'SalmonellaDB'
+    cd 'SalmonellaDB' && makeblastdb -in ../${genome_file} -dbtype nucl -out salmonella_genome_db -title 'SalmonellaDB'
+    """
+}
+
+process unzipGenome {
+    input:
+    path genome_gz_file
+
+    output:
+    path "salmonella_genome.fna"
+
+    script:
+    """
+    gzip -fd ${genome_gz_file}
+    """
+}
+
+process alignLocally {
     container 'ncbi/blast'
 
     input:
     path query_file
+    path db_file
 
     output:
-    path "alignments_results.txt"
+    path "alignments_results.tsv"
 
     script:
     """
-    blastn -query ${query_file} -db nt -remote -out alignments_results.txt -outfmt 6
+    blastn -query ${query_file} -db ${db_file}/salmonella_genome_db -out alignments_results.tsv -outfmt 6
     """
 }
 
 workflow {
 
-    Channel.of(params.species_on_dataset)
+    salmonella_gz_genome_ch = Channel.of(params.species_on_dataset)
         | downloadSalmonellaGenome
-        | collectFile(
-            name: "salmonella_genome.gzip",
+    
+    salmonella_gz_genome_ch | collectFile(
+            name: "salmonella_genome.fna.gz",
             storeDir: params.data_dir
         )
+    
+    salmonella_genome_ch = unzipGenome(salmonella_gz_genome_ch)
 
-    // queries_ch = Channel
-    //                 .fromPath(params.queries_files)
-    //                 .splitFasta(by: params.queries_files_chunk_sizes, file:true)
+    salmonella_db_ch = makeBlastDB(salmonella_genome_ch)
 
-    // aligments_ch = align(queries_ch)
+    queries_ch = Channel
+                    .fromPath(params.queries_files)
+                    .splitFasta(by: params.queries_files_chunk_sizes, file:true)
 
-    // aligments_ch.collectFile(
-    //     name: "all_results.txt",
-    //     keepHeader: true,
-    //     storeDir: params.output_dir)
+    aligments_ch = alignLocally(queries_ch, salmonella_db_ch)
+    
+    aligments_ch.collectFile(
+        name: "all_results.txt",
+        keepHeader: true,
+        storeDir: params.output_dir)
 }

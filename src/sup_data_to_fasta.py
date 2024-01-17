@@ -8,9 +8,11 @@ from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.Blast import NCBIWWW, NCBIXML
 
-def load_inputs(input_files):    
-    data_dfs = { Path(f).stem:pd.read_csv(f) for f in input_files}
-    return data_dfs
+
+def load_xlsx(input_file):
+    sup_dict = pd.read_excel(input_file, sheet_name=None)
+    del sup_dict['Legend']
+    return sup_dict
 
 def map_record_to_SeqRecord(r, col_name="RNA1"):
     strand_code = 1 if r[f"{col_name} Strand"] == "+" else -1
@@ -20,7 +22,7 @@ def map_record_to_SeqRecord(r, col_name="RNA1"):
     from_pos = r[f"{col_name} from"]
     to_pos = r[f"{col_name} to"]
     type = r[f"{col_name} type"]
-    description = '>' + id + ' ' + ' '
+    description = id + ' ' + ' '
     return SeqRecord(
         id=id,
         description=description,
@@ -42,21 +44,21 @@ def write_fasta(seq_records, output):
     for k, df in seq_records.items():
         SeqIO.write(df, f"{output}/{k}.fa", "fasta")
 
-def main(input_files, output_dir):    
+def main(input_file, output_dir):    
     if not os.path.exists(output_dir): 
         os.makedirs(output_dir)
             
-    input_files_dict = load_inputs(input_files)
-    seg_records_dict = map_SeqRecords_to_fasta(input_files_dict)
+    sup_data_dict = load_xlsx(input_file)
+    seg_records_dict = map_SeqRecords_to_fasta(sup_data_dict)
     write_fasta(seg_records_dict, output_dir)
    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert supplementary data to FASTA format.")
-    parser.add_argument("-i", "--inputs", nargs="+", help="Input CSV files")
+    parser.add_argument("-i", "--input", help="Input .xlsx file with Liu, et al. supplementary data")
     parser.add_argument("-o", "--output_dir", default=os.getcwd(), help="output_dir directory")
     args = parser.parse_args()
-    main(args.inputs, args.output_dir)
+    main(args.input, args.output_dir)
 
 
 

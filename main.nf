@@ -62,8 +62,7 @@ process alignLocally {
     container 'ncbi/blast'
 
     input:
-    path query_file
-    path db_file
+    tuple path(query_file), path(db_file)
 
     output:
     path "alignments_results.tsv"
@@ -76,6 +75,7 @@ process alignLocally {
 
 workflow {
 
+    // download salmonella genome
     salmonella_gz_genome_ch = Channel.of(params.species_on_dataset)
         | downloadSalmonellaGenome
     
@@ -83,17 +83,25 @@ workflow {
             name: "salmonella_genome.fna.gz",
             storeDir: params.data_dir
         )
-    
+
     salmonella_genome_ch = unzipGenome(salmonella_gz_genome_ch)
 
+    // make blast db
     salmonella_db_ch = makeBlastDB(salmonella_genome_ch)
 
+    // load queries from fasta files
     queries_ch = Channel
                     .fromPath(params.queries_files)
                     .splitFasta(by: params.queries_files_chunk_sizes, file:true)
 
-    aligments_ch = alignLocally(queries_ch, salmonella_db_ch)
+    queries_ch.countFasta().view(c -> "Number of queries: ${c}")
     
+    // combine queries and db before calling alignLocally
+    query_db_ch = queries_ch.combine(salmonella_db_ch)
+    aligments_ch = alignLocally(query_db_ch)
+    
+    // store output 
+    aligments_ch.countLines().view(c -> "Number of alignments: ${c}")
     aligments_ch.collectFile(
         name: "all_results.txt",
         keepHeader: true,

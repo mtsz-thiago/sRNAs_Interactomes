@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 import pandas as pd
 import os
@@ -11,7 +13,7 @@ from Bio.Blast import NCBIWWW, NCBIXML
 
 def load_xlsx(input_file):
     sup_dict = pd.read_excel(input_file, sheet_name=None)
-    del sup_dict['Legend']
+    sup_dict = {k.replace('+', '_'): v for k, v in sup_dict.items() if k != 'Legend'}
     return sup_dict
 
 def map_record_to_SeqRecord(r, col_name="RNA1"):

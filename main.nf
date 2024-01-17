@@ -1,31 +1,31 @@
 #!/usr/bin/env nextflow
-
-params.queries_files = [
-    "$baseDir/output/queries/EP_RNA1.fa",
-    "$baseDir/output/queries/EP_RNA2.fa",
-    "$baseDir/output/queries/ESP_RNA1.fa",
-    "$baseDir/output/queries/ESP_RNA2.fa",
-    "$baseDir/output/queries/SP_RNA1.fa",
-    "$baseDir/output/queries/SP_RNA2.fa"]
-
-params.data_dir = "$baseDir/data"
 params.output_dir = "$baseDir/output"
+params.data_file = "$baseDir/data/Liu_sup5_data.xlsx"
 params.queries_files_chunk_sizes = 10
+params.salmonella_ref_genome_ftp_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/945/GCF_000006945.2_ASM694v2/GCF_000006945.2_ASM694v2_genomic.fna.gz"
 
-params.species_on_dataset = ["Salmonella enterica"]
-
-process downloadSalmonellaGenome {
-    // container 'biocontainers/ncbi-datasets-cli:15.12.0_cv23.1.0-4'
+process createFastaFilesFromSupData {
 
     input:
-    val species_on_dataset
+    path data_file
 
+    output:
+    path "queries/*"
+
+    script:
+    """
+    python3 $projectDir/src/sup_data_to_fasta.py -i ${data_file} -o queries
+    """
+
+}
+
+process downloadSalmonellaGenome {
     output:
     path "salmonella_genome.fna.gz"
 
     script:
     """
-    curl -o salmonella_genome.fna.gz https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/945/GCF_000006945.2_ASM694v2/GCF_000006945.2_ASM694v2_genomic.fna.gz
+    curl -o salmonella_genome.fna.gz ${params.salmonella_ref_genome_ftp_url}
     """
 }
 
@@ -76,12 +76,11 @@ process alignLocally {
 workflow {
 
     // download salmonella genome
-    salmonella_gz_genome_ch = Channel.of(params.species_on_dataset)
-        | downloadSalmonellaGenome
+    salmonella_gz_genome_ch = downloadSalmonellaGenome()
     
     salmonella_gz_genome_ch | collectFile(
             name: "salmonella_genome.fna.gz",
-            storeDir: params.data_dir
+            storeDir: params.output_dir
         )
 
     salmonella_genome_ch = unzipGenome(salmonella_gz_genome_ch)
@@ -89,15 +88,22 @@ workflow {
     // make blast db
     salmonella_db_ch = makeBlastDB(salmonella_genome_ch)
 
-    // load queries from fasta files
-    queries_ch = Channel
-                    .fromPath(params.queries_files)
-                    .splitFasta(by: params.queries_files_chunk_sizes, file:true)
+    // create fasta files from sup data
+    queries_ch = createFastaFilesFromSupData(params.data_file) | flatten 
+    
+    // queries_ch.count().view(it -> "Number of queries: ${it}")
+    queries_ch.collectFile(
+        storeDir: "$params.output_dir/queries"
+    )
 
-    queries_ch.countFasta().view(c -> "Number of queries: ${c}")
+    // load queries from fasta files
+    splited_queries_ch = queries_ch
+        .splitFasta(by: params.queries_files_chunk_sizes, file:true)
+
+    splited_queries_ch.countFasta().view(c -> "Number of queries: ${c}")
     
     // combine queries and db before calling alignLocally
-    query_db_ch = queries_ch.combine(salmonella_db_ch)
+    query_db_ch = splited_queries_ch.combine(salmonella_db_ch)
     aligments_ch = alignLocally(query_db_ch)
     
     // store output 

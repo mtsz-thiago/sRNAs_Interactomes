@@ -31,13 +31,13 @@
 				"donjayamanne.githistory"
 			]
 		}
-	}
+	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "docker --version",
+	"postCreateCommand": "nextflow -version && pip install --upgrade pip && pip install -r requirements.txt"
 
 	// Configure tool-specific properties.
 	// "customizations": {},

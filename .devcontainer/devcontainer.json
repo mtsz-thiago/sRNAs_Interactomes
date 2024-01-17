@@ -27,7 +27,8 @@
 				"nextflow.nextflow",
 				"Serhioromano.vscode-gitflow",
 				"donjayamanne.python-extension-pack",
-				"ms-toolsai.jupyter"
+				"ms-toolsai.jupyter",
+				"donjayamanne.githistory"
 			]
 		}
 	}

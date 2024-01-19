@@ -65,9 +65,10 @@ process alignLocally {
     tuple path(query_file), path(db_file)
 
     output:
-    path "alignments_results.tsv"
+    tuple val(prefix), path("alignments_results.tsv")
 
     script:
+    prefix = query_file.name.split("\\.")[0].split("_")[0]
     """
     blastn -query ${query_file} -db ${db_file}/salmonella_genome_db -out alignments_results.tsv -outfmt 6
     sed -i '1i Query_ID\tSubject_ID\tPIdentity\tAlignment_Length\tMismatches\tGap_Openings\tQuery_Start\tQuery_End\tSubject_Start\tSubject_End\tE_value\tBit_Score' alignments_results.tsv
@@ -108,10 +109,10 @@ workflow {
     aligments_ch = alignLocally(query_db_ch)
     
     // store output 
-    aligments_ch.countLines().view(c -> "Number of alignments: ${c}")
-    aligments_ch.collectFile(
-        name: "all_results.txt",
-        keepHeader: true,
-        storeDir: params.output_dir)
+    aligments_ch.map(it -> tuple("${it[0]}_alignments_results.tsv", it[1]))
+                .collectFile(
+                    keepHeader: true,
+                    storeDir: params.output_dir
+                )
 }
 

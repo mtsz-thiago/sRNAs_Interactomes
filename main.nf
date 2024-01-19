@@ -70,6 +70,7 @@ process alignLocally {
     script:
     """
     blastn -query ${query_file} -db ${db_file}/salmonella_genome_db -out alignments_results.tsv -outfmt 6
+    sed -i '1i Query_ID\tSubject_ID\tPIdentity\tAlignment_Length\tMismatches\tGap_Openings\tQuery_Start\tQuery_End\tSubject_Start\tSubject_End\tE_value\tBit_Score' alignments_results.tsv
     """
 }
 
@@ -113,3 +114,4 @@ workflow {
         keepHeader: true,
         storeDir: params.output_dir)
 }
+

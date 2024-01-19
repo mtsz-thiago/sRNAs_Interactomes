@@ -7,6 +7,7 @@ RUN apt update && apt install -y \
     python3 \
     python3-pip \
     python3-venv \
+    graphviz \
     openjdk-11-jdk \
     && apt clean -y && rm -rf /var/lib/apt/lists/*
 
@@ -15,3 +16,4 @@ RUN curl -s https://get.nextflow.io > nextflow
 
 RUN mv nextflow /usr/local/bin/
 RUN chmod +x /usr/local/bin/nextflow
+RUN nextflow

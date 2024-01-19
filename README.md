@@ -12,7 +12,7 @@ Repository for workflows, data analysis, and everything related to sRNA interact
 ## Workflow
 
 <div class="center">
-   <img src="./figures/pipeline.png" style="text-align: center; width: 70%; border: 1px;margin: auto"/>
+   <img src="./docs/dag.png" style="text-align: center; width: 70%; border: 1px;margin: auto"/>
 </dib>
 
 ### Data

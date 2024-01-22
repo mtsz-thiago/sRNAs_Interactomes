@@ -1,6 +1,7 @@
 #!/usr/bin/env nextflow
 params.output_dir = "$baseDir/output"
 params.data_file = "$baseDir/data/Liu_sup5_data.xlsx"
+params.cache_dir = "$baseDir/data"
 params.queries_files_chunk_sizes = 10
 params.salmonella_ref_genome_ftp_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/945/GCF_000006945.2_ASM694v2/GCF_000006945.2_ASM694v2_genomic.fna.gz"
 
@@ -20,6 +21,9 @@ process createFastaFilesFromSupData {
 }
 
 process downloadSalmonellaGenome {
+
+    publishDir params.cache_dir, mode: 'copy'
+
     output:
     path "salmonella_genome.fna.gz"
 

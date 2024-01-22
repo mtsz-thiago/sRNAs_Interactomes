@@ -74,8 +74,8 @@ process alignLocally {
     script:
     prefix = query_file.name.split("\\.")[0].split("_")[0]
     """
-    blastn -query ${query_file} -db ${db_file}/salmonella_genome_db -out alignments_results.tsv -outfmt 6
-    sed -i '1i Query_ID\tSubject_ID\tPIdentity\tAlignment_Length\tMismatches\tGap_Openings\tQuery_Start\tQuery_End\tSubject_Start\tSubject_End\tE_value\tBit_Score' alignments_results.tsv
+    blastn -query ${query_file} -db ${db_file}/salmonella_genome_db -out alignments_results.tsv -outfmt "6 qseqid qgi qacc qaccver qlen sseqid sallseqid sgi sallgi sacc saccver sallacc slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos frames qframe sframe btop staxids sscinames scomnames sblastnames sskingdoms stitle salltitles sstrand qcovs qcovhsp"
+    sed -i '1i qseqid\tqgi\tqacc\tqaccver\tqlen\tsseqid\tsallseqid\tsgi\tsallgi\tsacc\tsaccver\tsallacc\tslen\tqstart\tqend\tsstart\tsend\tqseq\tsseq\tevalue\tbitscore\tscore\tlength\tpident\tnident\tmismatch\tpositive\tgapopen\tgaps\tppos\tframes\tqframe\tsframe\tbtop\tstaxids\tsscinames\tscomnames\tsblastnames\tsskingdoms\tstitle\tsalltitles\tsstrand\tqcovs\tqcovhsp' alignments_results.tsv
     """
 }
 

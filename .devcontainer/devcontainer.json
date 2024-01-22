@@ -28,7 +28,11 @@
 				"Serhioromano.vscode-gitflow",
 				"donjayamanne.python-extension-pack",
 				"ms-toolsai.jupyter",
-				"donjayamanne.githistory"
+				"donjayamanne.githistory",
+				"GitHub.copilot",
+				"ms-azuretools.vscode-docker",
+				"ms-toolsai.vscode-jupyter-powertoys",
+				"demystifying-javascript.python-extensions-pack"
 			]
 		}
 	},

@@ -32,7 +32,9 @@
 				"GitHub.copilot",
 				"ms-azuretools.vscode-docker",
 				"ms-toolsai.vscode-jupyter-powertoys",
-				"demystifying-javascript.python-extensions-pack"
+				"demystifying-javascript.python-extensions-pack",
+				"streetsidesoftware.code-spell-checker-portuguese",
+				"streetsidesoftware.code-spell-checker-portuguese-brazilian"
 			]
 		}
 	},

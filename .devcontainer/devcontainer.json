@@ -25,16 +25,25 @@
 				"GitHub.copilot-chat",
 				"vscjava.vscode-java-pack",
 				"nextflow.nextflow",
-				"Serhioromano.vscode-gitflow"
+				"Serhioromano.vscode-gitflow",
+				"donjayamanne.python-extension-pack",
+				"ms-toolsai.jupyter",
+				"donjayamanne.githistory",
+				"GitHub.copilot",
+				"ms-azuretools.vscode-docker",
+				"ms-toolsai.vscode-jupyter-powertoys",
+				"demystifying-javascript.python-extensions-pack",
+				"streetsidesoftware.code-spell-checker-portuguese",
+				"streetsidesoftware.code-spell-checker-portuguese-brazilian"
 			]
 		}
-	}
+	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "docker --version",
+	"postCreateCommand": "nextflow -version && pip install --upgrade pip && pip install -r requirements.txt"
 
 	// Configure tool-specific properties.
 	// "customizations": {},

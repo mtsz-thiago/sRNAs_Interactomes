@@ -5,6 +5,18 @@ params.cache_dir = "$baseDir/data"
 params.queries_files_chunk_sizes = 10
 params.salmonella_ref_genome_ftp_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/945/GCF_000006945.2_ASM694v2/GCF_000006945.2_ASM694v2_genomic.fna.gz"
 
+def getScenarioFromFileName(queryFilePath) {
+    return queryFilePath.name.split("\\.")[0].split("_")[0]
+}
+
+def getScenarionFromAlignedFIleNmeChunk(alginedFileName) {
+    return "${alginedFileName}_alignments_results.tsv"
+}
+
+def mapAlignedTuplesToGroupChunks(it) {
+    return tuple(getScenarionFromAlignedFIleNmeChunk(it[0]), it[1])
+}
+
 process createFastaFilesFromSupData {
 
     input:
@@ -72,7 +84,7 @@ process alignLocally {
     tuple val(prefix), path("alignments_results.tsv")
 
     script:
-    prefix = query_file.name.split("\\.")[0].split("_")[0]
+    prefix = getScenarioFromFileName(query_file)
     """
     blastn -query ${query_file} -db ${db_file}/salmonella_genome_db -out alignments_results.tsv -outfmt "6 qseqid qgi qacc qaccver qlen sseqid sallseqid sgi sallgi sacc saccver sallacc slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos frames qframe sframe btop staxids sscinames scomnames sblastnames sskingdoms stitle salltitles sstrand qcovs qcovhsp"
     sed -i '1i qseqid\tqgi\tqacc\tqaccver\tqlen\tsseqid\tsallseqid\tsgi\tsallgi\tsacc\tsaccver\tsallacc\tslen\tqstart\tqend\tsstart\tsend\tqseq\tsseq\tevalue\tbitscore\tscore\tlength\tpident\tnident\tmismatch\tpositive\tgapopen\tgaps\tppos\tframes\tqframe\tsframe\tbtop\tstaxids\tsscinames\tscomnames\tsblastnames\tsskingdoms\tstitle\tsalltitles\tsstrand\tqcovs\tqcovhsp' alignments_results.tsv
@@ -95,7 +107,7 @@ workflow {
     salmonella_db_ch = makeBlastDB(salmonella_genome_ch)
 
     // create fasta files from sup data
-    queries_ch = createFastaFilesFromSupData(params.data_file) | flatten 
+    queries_ch = createFastaFilesFromSupData(params.data_file).flatten()
     
     // queries_ch.count().view(it -> "Number of queries: ${it}")
     queries_ch.collectFile(
@@ -113,7 +125,7 @@ workflow {
     aligments_ch = alignLocally(query_db_ch)
     
     // store output 
-    aligments_ch.map(it -> tuple("${it[0]}_alignments_results.tsv", it[1]))
+    aligments_ch.map( it -> mapAlignedTuplesToGroupChunks(it) )
                 .collectFile(
                     keepHeader: true,
                     storeDir: params.output_dir

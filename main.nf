@@ -5,7 +5,7 @@ params.cache_dir = "$baseDir/data"
 params.queries_files_chunk_sizes = 10
 params.salmonella_ref_genome_ftp_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/945/GCF_000006945.2_ASM694v2/GCF_000006945.2_ASM694v2_genomic.fna.gz"
 
-blast_word_sz_list = [7, 8, 9, 10, 11]
+blast_word_sz_list = [4, 7, 11, 15]
 
 def getScenarioFromFileName(queryFilePath) {
     return queryFilePath.name.split("\\.")[0].split("_")[0]

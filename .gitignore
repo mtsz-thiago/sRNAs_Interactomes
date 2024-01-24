@@ -163,6 +163,7 @@ cython_debug/
 .nextflow.log*
 .nextflow/
 work/
+~/nextflow
 output/
 data/
 !data/Liu_sup5_data.xlsx

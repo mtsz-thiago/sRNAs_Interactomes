@@ -5,6 +5,8 @@ params.cache_dir = "$baseDir/data"
 params.queries_files_chunk_sizes = 10
 params.salmonella_ref_genome_ftp_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/945/GCF_000006945.2_ASM694v2/GCF_000006945.2_ASM694v2_genomic.fna.gz"
 
+blast_word_sz_list = [7, 8, 9, 10, 11]
+
 def getScenarioFromFileName(queryFilePath) {
     return queryFilePath.name.split("\\.")[0].split("_")[0]
 }
@@ -78,15 +80,15 @@ process alignLocally {
     container 'ncbi/blast'
 
     input:
-    tuple path(query_file), path(db_file)
+    tuple path(query_file), path(db_file), val(blast_word_sz)
 
     output:
     tuple val(prefix), path("alignments_results.tsv")
 
     script:
-    prefix = getScenarioFromFileName(query_file)
+    prefix = getScenarioFromFileName(query_file) + "w${blast_word_sz}"
     """
-    blastn -query ${query_file} -db ${db_file}/salmonella_genome_db -out alignments_results.tsv -outfmt "6 qseqid qgi qacc qaccver qlen sseqid sallseqid sgi sallgi sacc saccver sallacc slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos frames qframe sframe btop staxids sscinames scomnames sblastnames sskingdoms stitle salltitles sstrand qcovs qcovhsp"
+    blastn -query ${query_file} -word_size ${blast_word_sz} -db ${db_file}/salmonella_genome_db -out alignments_results.tsv -outfmt "6 qseqid qgi qacc qaccver qlen sseqid sallseqid sgi sallgi sacc saccver sallacc slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos frames qframe sframe btop staxids sscinames scomnames sblastnames sskingdoms stitle salltitles sstrand qcovs qcovhsp"
     sed -i '1i qseqid\tqgi\tqacc\tqaccver\tqlen\tsseqid\tsallseqid\tsgi\tsallgi\tsacc\tsaccver\tsallacc\tslen\tqstart\tqend\tsstart\tsend\tqseq\tsseq\tevalue\tbitscore\tscore\tlength\tpident\tnident\tmismatch\tpositive\tgapopen\tgaps\tppos\tframes\tqframe\tsframe\tbtop\tstaxids\tsscinames\tscomnames\tsblastnames\tsskingdoms\tstitle\tsalltitles\tsstrand\tqcovs\tqcovhsp' alignments_results.tsv
     """
 }
@@ -120,9 +122,15 @@ workflow {
 
     splited_queries_ch.countFasta().view(c -> "Number of queries: ${c}")
     
+    // add word sizes to blast input channel
+    blast_word_sz_ch = channel.fromList(blast_word_sz_list)
+
     // combine queries and db before calling alignLocally
-    query_db_ch = splited_queries_ch.combine(salmonella_db_ch)
-    aligments_ch = alignLocally(query_db_ch)
+    blast_inputs_ch = splited_queries_ch
+                        .combine(salmonella_db_ch)
+                        .combine(blast_word_sz_ch)
+
+    aligments_ch = alignLocally(blast_inputs_ch)
     
     // store output 
     aligments_ch.map( it -> mapAlignedTuplesToGroupChunks(it) )

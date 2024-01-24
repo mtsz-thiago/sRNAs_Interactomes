@@ -11,10 +11,10 @@ Repository for workflows, data analysis, and everything related to sRNA interact
 
 ## Running
 
-The following command should genarete 
+The following command should run the pipeline
 
 ```bash
-nextflow run -resume main.nf -with-report output/ -with-timeline output/ -with-dag docs/dag.png
+nextflow run -resume main.nf -with-report output/report.html -with-timeline output/timeline.html -with-dag docs/dag.png
 ```
 
 ## Workflow

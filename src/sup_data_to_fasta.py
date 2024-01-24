@@ -13,7 +13,6 @@ from Bio.Blast import NCBIWWW, NCBIXML
 def deduplicate_with_largest(df):
     return df.loc[df.groupby("name")["seq"].idxmax()]
 
-
 def from_pair_to_single_seq_record_df(df):
     
     RNA1_related_columns = [k for k in df.columns if "RNA1" in k]

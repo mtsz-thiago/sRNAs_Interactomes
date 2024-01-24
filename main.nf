@@ -98,7 +98,7 @@ workflow {
     // download salmonella genome
     salmonella_gz_genome_ch = downloadSalmonellaGenome()
     
-    salmonella_gz_genome_ch | collectFile(
+    salmonella_gz_genome_ch.collectFile(
             name: "salmonella_genome.fna.gz",
             storeDir: params.output_dir
         )

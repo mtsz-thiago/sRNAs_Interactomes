@@ -17,18 +17,37 @@ The following command should run the pipeline
 nextflow run -resume main.nf -with-report output/report.html -with-timeline output/timeline.html -with-dag docs/dag.png
 ```
 
-## Workflow
+### Input Data
 
-<div class="center">
-   <img src="./docs/dag.png" style="text-align: center; width: 70%; border: 1px;margin: auto"/>
-</dib>
+Liu, et al. [1] has made his interactome dataset available on [Geo Database](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE234792) we are going to experiment on this dataset. We will use [nf-core/fetchngs](https://nf-co.re/fetchngs/1.11.0) workflow to fetch such data. [fetch_data.sh](./fetch_data.sh) uses this workflow to download data from GEO database with following workflow call:
 
-### Data
+This pipeline processes the [supplementary data 5](https://www.nature.com/articles/s41467-023-43632-1#additional-information) which contains some interactions between sRNA and mRNA as described on source. The first spreadsheet in [data file](./data/Liu_sup5_data.xlsx) - committed in this repo for convenience -  contains metadata, all other datasets corresponding to experiments as described in the paper.
 
-
-Liu, et al. [1] has made his interactome dataset abailable on [Geo Database](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE234792) we are going to experiment on this dataset. We will use [nf-core/fetchngs](https://nf-co.re/fetchngs/1.11.0) workflow to fetch such data. [fetch_data.sh](./fetch_data.sh) uses this workflow to download data from GEO database with following workflow call:
+| Field                          | Description                                                                                                                             |
+|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| RNA1 name                      | Common name of RNA1 mapped to the genomic                                                                                                |
+| RNA2 name                      | Common name of RNA2 mapped to the genomic                                                                                                |
+| RNA1 Strand                    | The strand RNA1 was mapped to                                                                                                            |
+| RNA1 from                      | Position of the first nucleotide of the most 5' chimera mapped to RNA1                                                                   |
+| RNA1 to                        | Position of the first nucleotide of the most 3' chimera mapped to RNA1                                                                   |
+| RNA1 ligation from             | Position of the last nucleotide of the most 5' chimera mapped to RNA1                                                                    |
+| RNA1 ligation to               | Position of the last nucleotide of the most 3' chimera mapped to RNA1                                                                    |
+| RNA2 Strand                    | The strand RNA2 was mapped to                                                                                                            |
+| RNA2 from                      | Position of the last nucleotide of the most 5' chimera mapped to RNA2                                                                    |
+| RNA2 to                        | Position of the last nucleotide of the most 3' chimera mapped to RNA2                                                                    |
+| RNA2 ligation from             | Position of the first nucleotide of the most 5' chimera mapped to RNA2                                                                   |
+| RNA2 ligation to               | Position of the first nucleotide of the most 3' chimera mapped to RNA2                                                                   |
+| Number of interactions         | Number of chimeras supporting the interaction                                                                                            |
+| Odds Ratio                     | (K/L)/(M/N), where K= Number of chimeric fragments of RNA1-RNA2, L=number of other fragments involving RNA2, M=number of other fragments involving RNA1, N=number of all other fragments (that do not involve RNA1 and RNA2) |
+| One-sided Fisher's exact test p-value | p-value for observing at least this number of chimeric fragments given their background frequencies on Hfq. The Odds Ratio provides the effect size of the test |
+| RNA1 type                      | The genomic annotation of RNA1                                                                                                           |
+| RNA2 type                      | The genomic annotation of RNA2                                                                                                           |
+| RNA1 seq                       | RNA1 start was taken from the coordinate termed "RNA1 from" and RNA1 end was taken the coordinate termed "RNA1 ligation to". If "RNA1 ligation to" was not identified, RNA1 end was taken 20 nucleotides downstream the coordinate termed "RNA1 to" |
+| RNA2 seq                       | RNA2 start was taken the coordinate termed "RNA2 ligation from" and the end was taken at coordinate of "RNA2 to". If "RNA2 ligation from" was not identified, RNA2 start was taken 20 nucleotides upstream the coordinate termed "RNA2 from" |
 
 #### Raw Data
+
+The raw data from which supplementary data was derived can be fetched from NCBI using [fetchngs Nextflow pipeline](https://nf-co.re/fetchngs/)
 
 ```bash
 nextflow run -resume nf-core/fetchngs \
@@ -36,14 +55,25 @@ nextflow run -resume nf-core/fetchngs \
    --outdir ./data
 ```
 
-#### Supplementary Data
+The full pipeline from those read to supplementary data is not yet public.
 
-https://www.nature.com/articles/s41467-023-43632-1#additional-information
+## Workflow
 
+The workflow implemented on [main.nf](./main.nf) will:
 
-### Salmonella Ref Gene
+**Output**
 
-https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000210855.2/
+* primary outputs:
+   * alignments files: for each experiment, for each parameterized value for *word_size* the alignment result for each query extracted from supplementary data input file.
+* secondary outputs:
+   * report and timeline: ,html files outputted by Nextflow runner containing the last run profiler information ( memory usage, cpu usage, etc.) - if *-with-report* and *-with-timeline* flags are set
+   * queries files: fasta files with sequences extracted from supplementary data file input using a [Python script](./src/sup_data_to_fasta.py) these files are passed to BLAST as input
+
+As described on supplementary data the reference genome [Salmonella enterica subsp. enterica serovar Typhimurium str. SL1344](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000210855.2/)
+
+<div class="center">
+   <img src="./docs/dag.png" style="text-align: center; width: 70%; border: 1px;margin: auto"/>
+</dib>
 
 ## References
 

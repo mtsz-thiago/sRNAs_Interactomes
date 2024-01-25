@@ -8,7 +8,8 @@ Repository for workflows, data analysis, and everything related to sRNA interact
 ## dependencies
 
 - [Nextflow](https://www.nextflow.io/): framework to run scientific workflows.
-
+- [Docker](https://www.docker.com/): container framework
+ 
 ## Running
 
 The following command should run the pipeline

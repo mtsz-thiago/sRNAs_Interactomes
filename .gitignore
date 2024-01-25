@@ -159,11 +159,12 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+#data
+!/data/Liu_sup5_data.xlsx
+
 #nextflow
 .nextflow.log*
 .nextflow/
-work/
-~/nextflow
 output/
 data/
 !data/Liu_sup5_data.xlsx

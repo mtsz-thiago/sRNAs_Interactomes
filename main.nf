@@ -3,7 +3,8 @@ params.output_dir = "$baseDir/output"
 params.data_file = "$baseDir/data/Liu_sup5_data.xlsx"
 params.cache_dir = "$baseDir/data"
 params.queries_files_chunk_sizes = 10
-params.salmonella_ref_genome_ftp_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/945/GCF_000006945.2_ASM694v2/GCF_000006945.2_ASM694v2_genomic.fna.gz"
+params.salmonella_ref_genome_ftp_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/210/855/GCF_000210855.2_ASM21085v2/GCF_000210855.2_ASM21085v2_genomic.fna.gz"
+params.salmonella_features_table_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/210/855/GCF_000210855.2_ASM21085v2/GCF_000210855.2_ASM21085v2_feature_table.txt.gz"
 
 blast_word_sz_list = [4, 7, 11, 15]
 
@@ -44,6 +45,19 @@ process downloadSalmonellaGenome {
     script:
     """
     curl -o salmonella_genome.fna.gz ${params.salmonella_ref_genome_ftp_url}
+    """
+}
+
+process downloadSalmonellaFeatureTable {
+
+    publishDir params.cache_dir, mode: 'copy'
+
+    output:
+    path "salmonella_feature_table.txt"
+
+    script:
+    """
+    curl -o salmonella_feature_table.txt ${params.salmonella_features_table_url}
     """
 }
 
@@ -94,6 +108,8 @@ process alignLocally {
 }
 
 workflow {
+
+    downloadSalmonellaFeatureTable()
 
     // download salmonella genome
     salmonella_gz_genome_ch = downloadSalmonellaGenome()

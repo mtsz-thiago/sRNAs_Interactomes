@@ -36,10 +36,14 @@ nextflow run -resume nf-core/fetchngs \
    --outdir ./data
 ```
 
-#### Suplementaru Data
+#### Supplementary Data
 
 https://www.nature.com/articles/s41467-023-43632-1#additional-information
 
+
+### Salmonella Ref Gene
+
+https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000210855.2/
 
 ## References
 

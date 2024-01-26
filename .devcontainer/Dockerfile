@@ -23,4 +23,3 @@ RUN curl -s https://get.nextflow.io > nextflow
 
 RUN mv nextflow /usr/local/bin/
 RUN chmod +x /usr/local/bin/nextflow
-RUN nextflow

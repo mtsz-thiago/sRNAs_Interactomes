@@ -38,6 +38,14 @@
 			]
 		}
 	},
+	"runArgs": [
+		"--runtime=nvidia",
+		"--gpus",
+		"all"
+	]
+}
+
+	
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],

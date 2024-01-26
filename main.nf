@@ -36,16 +36,15 @@ process createFastaFilesFromSupData {
 }
 
 process downloadSalmonellaGenome {
-
+    container 'biocontainers/nc7bi-datasets-cli:15.12.0_cv23.1.0-4'
     publishDir params.cache_dir, mode: 'copy'
 
     output:
-    path "salmonella_genome.fna.gz"
+    path OUTPUT_FILENAME="salmonella_genome.fna.gz"
 
     script:
-    """
-    curl -o salmonella_genome.fna.gz ${params.salmonella_ref_genome_ftp_url}
-    """
+    URL = params.salmonella_ref_genome_ftp_url
+    template "get_request_using_curl.sh"
 }
 
 process downloadSalmonellaFeatureTable {
@@ -53,12 +52,11 @@ process downloadSalmonellaFeatureTable {
     publishDir params.cache_dir, mode: 'copy'
 
     output:
-    path "salmonella_feature_table.txt"
+    path OUTPUT_FILENAME="salmonella_feature_table.txt"
 
     script:
-    """
-    curl -o salmonella_feature_table.txt ${params.salmonella_features_table_url}
-    """
+    URL = params.salmonella_features_table_url
+    template "get_request_using_curl.sh"
 }
 
 process makeBlastDB {

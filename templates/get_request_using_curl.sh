@@ -1,3 +1,3 @@
 #!/bin/bash
 
-curl -o $OUTPUT_FILENAME $URL
+curl -o $output_filename $url

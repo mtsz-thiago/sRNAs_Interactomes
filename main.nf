@@ -6,7 +6,8 @@ params.queries_files_chunk_sizes = 10
 params.salmonella_ref_genome_ftp_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/210/855/GCF_000210855.2_ASM21085v2/GCF_000210855.2_ASM21085v2_genomic.fna.gz"
 params.salmonella_features_table_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/210/855/GCF_000210855.2_ASM21085v2/GCF_000210855.2_ASM21085v2_feature_table.txt.gz"
 
-blast_word_sz_list = [4, 7, 11, 15]
+// params.blast_word_sz_list = "4,7,11,15"
+params.blast_word_sz_list = [4,7,11,15]
 
 def getScenarioFromFileName(queryFilePath) {
     return queryFilePath.name.split("\\.")[0].split("_")[0]
@@ -36,14 +37,14 @@ process createFastaFilesFromSupData {
 }
 
 process downloadSalmonellaGenome {
-    container 'biocontainers/nc7bi-datasets-cli:15.12.0_cv23.1.0-4'
     publishDir params.cache_dir, mode: 'copy'
 
     output:
-    path OUTPUT_FILENAME="salmonella_genome.fna.gz"
+    path "salmonella_genome.fna.gz"
 
     script:
-    URL = params.salmonella_ref_genome_ftp_url
+    output_filename="salmonella_genome.fna.gz"
+    url = params.salmonella_ref_genome_ftp_url
     template "get_request_using_curl.sh"
 }
 
@@ -52,10 +53,11 @@ process downloadSalmonellaFeatureTable {
     publishDir params.cache_dir, mode: 'copy'
 
     output:
-    path OUTPUT_FILENAME="salmonella_feature_table.txt"
+    path "salmonella_feature_table.txt"
 
     script:
-    URL = params.salmonella_features_table_url
+    output_filename="salmonella_feature_table.txt"
+    url = params.salmonella_features_table_url
     template "get_request_using_curl.sh"
 }
 
@@ -137,7 +139,10 @@ workflow {
     splited_queries_ch.countFasta().view(c -> "Number of queries: ${c}")
     
     // add word sizes to blast input channel
-    blast_word_sz_ch = channel.fromList(blast_word_sz_list)
+    blast_word_sz_ch = channel.from(params.blast_word_sz_list)
+                        // .map(it -> it.split(",")*.join()*.asType(Integer))
+                        // .flatten()
+    blast_word_sz_ch.view()
 
     // combine queries and db before calling alignLocally
     blast_inputs_ch = splited_queries_ch

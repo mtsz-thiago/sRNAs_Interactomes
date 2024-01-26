@@ -7,7 +7,7 @@ params.salmonella_ref_genome_ftp_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all
 params.salmonella_features_table_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/210/855/GCF_000210855.2_ASM21085v2/GCF_000210855.2_ASM21085v2_feature_table.txt.gz"
 
 // params.blast_word_sz_list = "4,7,11,15"
-params.blast_word_sz_list = [4,7,11,15]
+params.blast_word_sizes = "4,7,11,15"
 
 def getScenarioFromFileName(queryFilePath) {
     return queryFilePath.name.split("\\.")[0].split("_")[0]
@@ -19,6 +19,10 @@ def getScenarionFromAlignedFIleNmeChunk(alginedFileName) {
 
 def mapAlignedTuplesToGroupChunks(it) {
     return tuple(getScenarionFromAlignedFIleNmeChunk(it[0]), it[1])
+}
+
+def getWordSizesFromStringParam(word_sizes_str) {
+    return ((String)word_sizes_str).split(',').collect {it as Integer}
 }
 
 process createFastaFilesFromSupData {
@@ -139,10 +143,10 @@ workflow {
     splited_queries_ch.countFasta().view(c -> "Number of queries: ${c}")
     
     // add word sizes to blast input channel
-    blast_word_sz_ch = channel.from(params.blast_word_sz_list)
-                        // .map(it -> it.split(",")*.join()*.asType(Integer))
-                        // .flatten()
-    blast_word_sz_ch.view()
+    blast_word_sz_list = getWordSizesFromStringParam(params.blast_word_sizes)
+    blast_word_sz_ch = channel.from(blast_word_sz_list)
+
+    blast_word_sz_ch
 
     // combine queries and db before calling alignLocally
     blast_inputs_ch = splited_queries_ch

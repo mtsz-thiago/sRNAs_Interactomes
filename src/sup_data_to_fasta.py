@@ -66,15 +66,35 @@ def map_record_to_SeqRecord(r):
 
 def map_SeqRecords_to_fasta(seq_records):
     bio_dfs = {}
+    expected_dfs = {}
     for k, df in seq_records.items():
-        bio_dfs[k+"_RNA1"] = df[df.origin == 'RNA1'].apply(axis=1, func=lambda x: map_record_to_SeqRecord(x))
-        bio_dfs[k+"_RNA2"] = df[df.origin == 'RNA2'].apply(axis=1, func=lambda x: map_record_to_SeqRecord(x))
-    return bio_dfs
+        
+        df1 = df[df.origin == 'RNA1']
+        df2 = df[df.origin == 'RNA2']
+        
+        bio_dfs[k+"_RNA1"] = df1.apply(axis=1, func=lambda x: map_record_to_SeqRecord(x))
+        bio_dfs[k+"_RNA2"] = df2.apply(axis=1, func=lambda x: map_record_to_SeqRecord(x))
+        
+        
+        expected_dfs[k+"_RNA1"] = pd.concat([df1.name, bio_dfs[k+"_RNA1"].map(lambda i: i.id)], axis=1)
+        expected_dfs[k+"_RNA1"].rename(columns={"name": "expected", 0: "query_id"}, inplace=True)
+        expected_dfs[k+"_RNA2"] = pd.concat([df1.name, bio_dfs[k+"_RNA2"].map(lambda i: i.id)], axis=1)
+        expected_dfs[k+"_RNA2"].rename(columns={"name": "expected", 0: "query_id"}, inplace=True)
+        
+    return bio_dfs, expected_dfs
 
-def write_fasta(seq_records, output):
+def write_csvs(seq_records, expected, output):
+    
+    if not os.path.exists(f"{output}/queries"): 
+        os.makedirs(f"{output}/queries")
+    if not os.path.exists(f"{output}/expected"): 
+        os.makedirs(f"{output}/expected")
     
     for k, df in seq_records.items():
-        SeqIO.write(df, f"{output}/{k}.fa", "fasta")
+        SeqIO.write(df, f"{output}/queries/{k}.fa", "fasta")
+        
+    for k, df in expected.items():
+        df.to_csv(f"{output}/expected/{k}.csv", index=False)
 
 def main(input_file, output_dir):    
     if not os.path.exists(output_dir): 
@@ -84,8 +104,8 @@ def main(input_file, output_dir):
     
     queries_dict = transform_raw_dfs_to_queries(sup_data_dict)
 
-    seg_records_dict = map_SeqRecords_to_fasta(queries_dict)
-    write_fasta(seg_records_dict, output_dir)
+    seg_records_dict, expected_dfs = map_SeqRecords_to_fasta(queries_dict)
+    write_csvs(seg_records_dict, expected_dfs, output_dir)
    
 
 if __name__ == "__main__":

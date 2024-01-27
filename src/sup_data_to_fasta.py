@@ -9,9 +9,11 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.Blast import NCBIWWW, NCBIXML
+import uuid
 
-def deduplicate_with_largest(df):
-    return df.loc[df.groupby("name")["seq"].idxmax()]
+def deduplicate_queries_by_seq(df):
+    duplicated_seqs = df.seq.duplicated()
+    return df[~duplicated_seqs]
 
 def from_pair_to_single_seq_record_df(df):
     
@@ -32,7 +34,7 @@ def from_pair_to_single_seq_record_df(df):
     rna2_df["origin"] = "RNA2"
     
     queries_df = pd.concat([rna1_df, rna2_df], ignore_index=True)
-    large_seq_queries_df = deduplicate_with_largest(queries_df)
+    large_seq_queries_df = deduplicate_queries_by_seq(queries_df)
     
     return large_seq_queries_df
 
@@ -46,13 +48,13 @@ def load_xlsx(input_file):
 
 def map_record_to_SeqRecord(r):
     strand_code = 1 if r[f"Strand"] == "+" else -1
-    id = r[f"name"]
-    name = r[f"name"]
+    id = str(uuid.uuid4())
+    name = id + "_" + r[f"origin"]
     seq = Seq(r[f"seq"])
     from_pos = r[f"from"]
     to_pos = r[f"to"]
     type = r[f"type"]
-    description = id + ' origin: ' + r["origin"]
+    description = f"{id} origin: {r.origin} expected {r.name}"
     return SeqRecord(
         id=id,
         description=description,

@@ -3,10 +3,14 @@ params.output_dir = "$baseDir/output"
 params.data_file = "$baseDir/data/Liu_sup5_data.xlsx"
 params.cache_dir = "$baseDir/data"
 params.queries_files_chunk_sizes = 10
-params.salmonella_ref_genome_ftp_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/210/855/GCF_000210855.2_ASM21085v2/GCF_000210855.2_ASM21085v2_genomic.fna.gz"
-params.salmonella_features_table_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/210/855/GCF_000210855.2_ASM21085v2/GCF_000210855.2_ASM21085v2_feature_table.txt.gz"
 
-// params.blast_word_sz_list = "4,7,11,15"
+params.salmonella_id = "GCF_000210855.2"
+
+genomeFilename = "GCF_000210855.2_ASM21085v2_genomic.fna"
+cdsFilename = "cds_from_genomic.fna"
+
+
+// params.blastWordSZ_list = "4,7,11,15"
 params.blast_word_sizes = "4,7,11,15"
 
 def getScenarioFromFileName(queryFilePath) {
@@ -25,6 +29,23 @@ def getWordSizesFromStringParam(word_sizes_str) {
     return ((String)word_sizes_str).split(',').collect {it as Integer}
 }
 
+process downloadSalmonellaDataset {
+    container 'biocontainers/ncbi-datasets-cli:15.12.0_cv23.1.0-4'
+    publishDir params.cache_dir, mode: 'copy'
+
+    input:
+    val salmonellaRefSeqID
+
+    output:
+    path "salmonella_dataset.zip"
+
+    script:
+    """
+    datasets download genome accession ${salmonellaRefSeqID} --filename salmonella_dataset.zip --include gff3,rna,cds,protein,genome,seq-report
+    """
+
+}
+
 process createFastaFilesFromSupData {
     // publishDir params.cache_dir, mode: 'copy'
 
@@ -41,29 +62,20 @@ process createFastaFilesFromSupData {
 
 }
 
-process downloadSalmonellaGenome {
-    // publishDir params.cache_dir, mode: 'copy'
+process makeBlastGenomeDB {
+    container 'ncbi/blast'
+
+    input:
+    path genome_file
 
     output:
-    path "salmonella_genome.fna.gz"
+    path "SalmonellaDB"
 
     script:
-    output_filename="salmonella_genome.fna.gz"
-    url = params.salmonella_ref_genome_ftp_url
-    template "get_request_using_curl.sh"
-}
-
-process downloadSalmonellaFeatureTable {
-
-    // publishDir params.cache_dir, mode: 'copy'
-
-    output:
-    path "salmonella_feature_table.txt"
-
-    script:
-    output_filename="salmonella_feature_table.txt"
-    url = params.salmonella_features_table_url
-    template "get_request_using_curl.sh"
+    """
+    mkdir -p 'SalmonellaDB'
+    cd 'SalmonellaDB' && makeblastdb -in ../${genome_file} -dbtype nucl -out salmonella_genome_db -title 'SalmonellaDB'
+    """
 }
 
 process makeBlastDB {
@@ -82,16 +94,16 @@ process makeBlastDB {
     """
 }
 
-process unzipGenome {
+process extractGenomeDataFromZip {
     input:
-    path genome_gz_file
+    path genome_ziped_file
 
     output:
-    path "salmonella_genome.fna"
+    path "ncbi_dataset/data/${params.salmonella_id}/*"
 
     script:
     """
-    gzip -fd ${genome_gz_file}
+    unzip ${genome_ziped_file}
     """
 }
 
@@ -114,21 +126,15 @@ process alignLocally {
 
 workflow {
 
-    downloadSalmonellaFeatureTable()
-
-    // download salmonella genome
-    salmonella_gz_genome_ch = downloadSalmonellaGenome()
+    salmonellaZipedDataset_ch = downloadSalmonellaDataset( channel.of(params.salmonella_id) )
+    salmonellaDataset_ch = extractGenomeDataFromZip(salmonellaZipedDataset_ch).flatten()
     
-    salmonella_gz_genome_ch.collectFile(
-            name: "salmonella_genome.fna.gz",
-            storeDir: params.output_dir
-        )
-
-    salmonella_genome_ch = unzipGenome(salmonella_gz_genome_ch)
+    salmonellaGenome_ch = salmonellaDataset_ch.filter { it -> it.getName() == genomeFilename }
+    salmonellaCDS_ch = salmonellaZipedDataset_ch.filter { it -> it.getName() == cdsFilename }
 
     // make blast db
-    salmonella_db_ch = makeBlastDB(salmonella_genome_ch)
-
+    salmonella_db_ch = makeBlastDB(salmonellaGenome_ch)
+    
     // create fasta files from sup data
     queries_and_expected_ch = createFastaFilesFromSupData(params.data_file).flatten()
     branched_queries_and_expected_ch = queries_and_expected_ch.branch { 
@@ -155,15 +161,13 @@ workflow {
     blast_word_sz_list = getWordSizesFromStringParam(params.blast_word_sizes)
     blast_word_sz_ch = channel.from(blast_word_sz_list)
 
-    blast_word_sz_ch
-
     // combine queries and db before calling alignLocally
     blast_inputs_ch = splited_queries_ch
                         .combine(salmonella_db_ch)
                         .combine(blast_word_sz_ch)
 
     aligments_ch = alignLocally(blast_inputs_ch)
-    
+
     // store output 
     aligments_ch.map( it -> mapAlignedTuplesToGroupChunks(it) )
                 .collectFile(

@@ -26,22 +26,23 @@ def getWordSizesFromStringParam(word_sizes_str) {
 }
 
 process createFastaFilesFromSupData {
+    // publishDir params.cache_dir, mode: 'copy'
 
     input:
     path data_file
 
     output:
-    path "queries/*"
+    tuple path("files/queries/*"), path("files/expected/*")
 
     script:
     """
-    python3 $projectDir/src/sup_data_to_fasta.py -i ${data_file} -o queries
+    python3 $projectDir/src/sup_data_to_fasta.py -i ${data_file} -o files
     """
 
 }
 
 process downloadSalmonellaGenome {
-    publishDir params.cache_dir, mode: 'copy'
+    // publishDir params.cache_dir, mode: 'copy'
 
     output:
     path "salmonella_genome.fna.gz"
@@ -54,7 +55,7 @@ process downloadSalmonellaGenome {
 
 process downloadSalmonellaFeatureTable {
 
-    publishDir params.cache_dir, mode: 'copy'
+    // publishDir params.cache_dir, mode: 'copy'
 
     output:
     path "salmonella_feature_table.txt"
@@ -129,18 +130,26 @@ workflow {
     salmonella_db_ch = makeBlastDB(salmonella_genome_ch)
 
     // create fasta files from sup data
-    queries_ch = createFastaFilesFromSupData(params.data_file).flatten()
+    queries_and_expected_ch = createFastaFilesFromSupData(params.data_file).flatten()
+    branched_queries_and_expected_ch = queries_and_expected_ch.branch { 
+        queries:  it.getParent().getName() == "queries"
+        expected:  it.getParent().getName() == "expected"
+    }
+
+    queries_ch = branched_queries_and_expected_ch.queries
+    expected_results_ch = branched_queries_and_expected_ch.expected
     
-    // queries_ch.count().view(it -> "Number of queries: ${it}")
     queries_ch.collectFile(
         storeDir: "$params.output_dir/queries"
+    )
+
+    expected_results_ch.collectFile(
+        storeDir: "$params.output_dir/expected_alignments_results"
     )
 
     // load queries from fasta files
     splited_queries_ch = queries_ch
         .splitFasta(by: params.queries_files_chunk_sizes, file:true)
-
-    splited_queries_ch.countFasta().view(c -> "Number of queries: ${c}")
     
     // add word sizes to blast input channel
     blast_word_sz_list = getWordSizesFromStringParam(params.blast_word_sizes)

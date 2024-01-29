@@ -130,10 +130,12 @@ workflow {
     salmonellaDataset_ch = extractGenomeDataFromZip(salmonellaZipedDataset_ch).flatten()
     
     salmonellaGenome_ch = salmonellaDataset_ch.filter { it -> it.getName() == genomeFilename }
-    salmonellaCDS_ch = salmonellaZipedDataset_ch.filter { it -> it.getName() == cdsFilename }
+    salmonellaCDS_ch = salmonellaDataset_ch.filter { it -> it.getName() == cdsFilename }
+
+    salmonellaCDS_ch.count().view()
 
     // make blast db
-    salmonella_db_ch = makeBlastDB(salmonellaGenome_ch)
+    salmonella_db_ch = makeBlastDB(salmonellaCDS_ch)
     
     // create fasta files from sup data
     queries_and_expected_ch = createFastaFilesFromSupData(params.data_file).flatten()

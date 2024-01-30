@@ -17,17 +17,18 @@ include { blast_wf as blastWFFullGenome } from "./module.blast" params(  queries
 include { blast_wf as blastWFCDS } from "./module.blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
                                                     wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
 
-def getScenarioFromFileName(queryFilePath) {
-    return queryFilePath.name.split("\\.")[0].split("_")[0]
+def getScenarioWordSizeKey(queryFilePath) {
+    return queryFilePath.getName().split("\\.")[0].split("_")[0]
 }
 
-// def getScenarionFromAlignedFIleNmeChunk(alginedFileName) {
-//     return "${alginedFileName}_alignments_results.tsv"
-// }
-
-// def mapAlignedTuplesToGroupChunks(it) {
-//     return tuple(getScenarionFromAlignedFIleNmeChunk(it[0]), it[1])
-// }
+def getScenarionFromFilename(filename) {
+    def matcher = (filename =~ /(.*)-(.*)$/)
+    if (matcher.matches()) {
+        return matcher[0][1]
+    } else {
+        return null
+    }
+}
 
 def getWordSizesFromStringParam(word_sizes_str) {
     return ((String)word_sizes_str).split(',').collect {it as Integer}
@@ -80,6 +81,29 @@ process extractGenomeDataFromZip {
     """
 }
 
+process mergeResultsAndExpected {
+    input:
+    tuple val(scenarioAndWordSize), path('genome'), path('cds'), path('expected')
+
+    output:
+    path("${scenarioAndWordSize}_results.csv")
+
+    //TODO this should be moved to a .py for clearity
+    script:
+    """
+    #!/usr/bin/python3
+    import pandas as pd
+
+    full_genomeAlignments_df = pd.read_csv('genome', sep='\t')
+    cds_alignments_df = pd.read_csv('cds', sep='\t')
+    expected_results_df = pd.read_csv('expected', sep=',')
+
+    merged_df = full_genomeAlignments_df.merge(cds_alignments_df, on='qseqid', how='outer', suffixes=('_genome','_cds'))
+    merged_df = merged_df.merge(expected_results_df, left_on='qseqid', right_on='query_id', how='right', suffixes=('','_expected'))
+    merged_df.to_csv('${scenarioAndWordSize}_results.csv', sep=',')
+    """
+}
+
 
 workflow {
 
@@ -92,26 +116,49 @@ workflow {
     // create fasta files from sup data
     queriesAndExpected_ch  = createFastaFilesFromSupData(params.data_file)
     queries_ch = queriesAndExpected_ch.queries.flatten()
-    expected_results_ch = queriesAndExpected_ch.expected.flatten()
+    expectedResults_ch = queriesAndExpected_ch.expected.flatten()
     
     queries_ch.collectFile(
         storeDir: "$params.output_dir/queries"
     )
 
-    expected_results_ch.collectFile(
+    expectedResults_ch.collectFile(
         storeDir: "$params.output_dir/expected_alignments_results"
     )
     
     // run blast against full genome
     blastFullGenomeResults_ch = blastWFFullGenome(queries_ch, salmonellaGenome_ch)
-    blastFullGenomeResults_ch.aligmentsResults_ch.collectFile(
+    fullGenomeAlignments_ch = blastFullGenomeResults_ch.aligmentsResults_ch
+    fullGenomeAlignments_ch.count().view(it -> "Full genome alignments ${it} files")
+    fullGenomeAlignments_ch.collectFile(
         storeDir: "$params.output_dir/full_genome_alignments"
     )
 
     // run blast against cds
     blastResultsCDS_ch = blastWFCDS(queries_ch, salmonellaCDS_ch)
-    blastResultsCDS_ch.aligmentsResults_ch.collectFile(
+    cds_alignments_ch = blastResultsCDS_ch.aligmentsResults_ch
+    cds_alignments_ch.collectFile(
         storeDir: "$params.output_dir/cds_alignments"
+    )
+    cds_alignments_ch.count().view(it -> "CDS alignments ${it} files")
+
+    // merge results
+    keyFileGenomeAlignment_ch = fullGenomeAlignments_ch.map(it -> [getScenarioWordSizeKey(it), it])
+    keyFileGenomeCDS_ch =  cds_alignments_ch.map(it -> [getScenarioWordSizeKey(it), it])
+    
+    keyFileExpectedResults_ch = expectedResults_ch.map(it -> [getScenarionFromFilename(it.getName()), it])
+
+    filesToMerge = keyFileGenomeAlignment_ch
+                        .join(keyFileGenomeCDS_ch)
+                        .map(it -> [getScenarionFromFilename(it[0]), it[0], it[1], it[2]])
+                        .combine(keyFileExpectedResults_ch, by:0)
+                        .map(it -> [it[1],it[2],it[3],it[4]] )
+
+    filesToMerge.count().view(it -> "Merging ${it} files")
+    // filesToMerge.view()
+    mergedResults_ch = mergeResultsAndExpected(filesToMerge)
+    mergedResults_ch.collectFile(
+        storeDir: "$params.output_dir"
     )
 }
 

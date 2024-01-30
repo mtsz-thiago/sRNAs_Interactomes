@@ -56,10 +56,13 @@ workflow blast_wf {
         .combine(subjectDB_ch)
         .combine(wordSizes_ch)
         
-    aligments_ch = alignLocally(blastInputs_ch)
-                    .groupTuple()
+    alignments_ch = alignLocally(blastInputs_ch)
+    groupedAlignments_ch = alignments_ch.collectFile(
+                            item -> [item[0], item[1]]
+                        )
+
                     // .collectFile()
     emit:
-    aligmentsResults_ch = aligments_ch
+    aligmentsResults_ch = groupedAlignments_ch
 }
 

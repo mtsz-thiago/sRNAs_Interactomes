@@ -61,7 +61,6 @@ workflow blast_wf {
                             item -> [item[0], item[1]]
                         )
 
-                    // .collectFile()
     emit:
     aligmentsResults_ch = groupedAlignments_ch
 }

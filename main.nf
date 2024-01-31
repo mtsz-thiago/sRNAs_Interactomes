@@ -10,7 +10,7 @@ params.salmonella_id = "GCF_000210855.2"
 
 genomeFilename = "GCF_000210855.2_ASM21085v2_genomic.fna"
 cdsFilename = "cds_from_genomic.fna"
-params.blast_word_sizes = "7,11"
+params.blast_word_sizes = "11"
 
 include { blast_wf as blastWFFullGenome } from "./module.blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
                                                     wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
@@ -18,7 +18,7 @@ include { blast_wf as blastWFCDS } from "./module.blast" params(  queriesChunckS
                                                     wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
 
 def getScenarioWordSizeKey(queryFilePath) {
-    return queryFilePath.getName().split("\\.")[0].split("_")[0]
+    return queryFilePath.getName().split("\\.")[0]
 }
 
 def getScenarionFromFilename(filename) {

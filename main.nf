@@ -1,165 +1,165 @@
 #!/usr/bin/env nextflow
+nextflow.enable.dsl=2
+
 params.output_dir = "$baseDir/output"
 params.data_file = "$baseDir/data/Liu_sup5_data.xlsx"
 params.cache_dir = "$baseDir/data"
-params.queries_files_chunk_sizes = 10
-params.salmonella_ref_genome_ftp_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/210/855/GCF_000210855.2_ASM21085v2/GCF_000210855.2_ASM21085v2_genomic.fna.gz"
-params.salmonella_features_table_url = "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/210/855/GCF_000210855.2_ASM21085v2/GCF_000210855.2_ASM21085v2_feature_table.txt.gz"
+params.queries_files_chunk_sizes = 20
 
-// params.blast_word_sz_list = "4,7,11,15"
-params.blast_word_sizes = "4,7,11,15"
+params.salmonella_id = "GCF_000210855.2"
 
-def getScenarioFromFileName(queryFilePath) {
-    return queryFilePath.name.split("\\.")[0].split("_")[0]
+genomeFilename = "GCF_000210855.2_ASM21085v2_genomic.fna"
+cdsFilename = "cds_from_genomic.fna"
+params.blast_word_sizes = "11"
+
+include { blast_wf as blastWFFullGenome } from "./module.blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
+                                                    wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
+include { blast_wf as blastWFCDS } from "./module.blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
+                                                    wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
+
+def getScenarioWordSizeKey(queryFilePath) {
+    return queryFilePath.getName().split("\\.")[0]
 }
 
-def getScenarionFromAlignedFIleNmeChunk(alginedFileName) {
-    return "${alginedFileName}_alignments_results.tsv"
-}
-
-def mapAlignedTuplesToGroupChunks(it) {
-    return tuple(getScenarionFromAlignedFIleNmeChunk(it[0]), it[1])
+def getScenarionFromFilename(filename) {
+    def matcher = (filename =~ /(.*)-(.*)$/)
+    if (matcher.matches()) {
+        return matcher[0][1]
+    } else {
+        return null
+    }
 }
 
 def getWordSizesFromStringParam(word_sizes_str) {
     return ((String)word_sizes_str).split(',').collect {it as Integer}
 }
 
+process downloadSalmonellaDataset {
+    container 'biocontainers/ncbi-datasets-cli:15.12.0_cv23.1.0-4'
+    publishDir params.cache_dir, mode: 'copy'
+
+    input:
+    val salmonellaRefSeqID
+
+    output:
+    path "salmonella_dataset.zip"
+
+    script:
+    """
+    datasets download genome accession ${salmonellaRefSeqID} --filename salmonella_dataset.zip --include gff3,rna,cds,protein,genome,seq-report
+    """
+
+}
+
 process createFastaFilesFromSupData {
+    // publishDir params.cache_dir, mode: 'copy'
 
     input:
     path data_file
 
     output:
-    path "queries/*"
+    path("files/queries/*"), emit: queries
+    path("files/expected/*"), emit: expected
 
     script:
     """
-    python3 $projectDir/src/sup_data_to_fasta.py -i ${data_file} -o queries
+    python3 $projectDir/src/sup_data_to_fasta.py -i ${data_file} -o files
     """
 
 }
 
-process downloadSalmonellaGenome {
-    publishDir params.cache_dir, mode: 'copy'
+process extractGenomeDataFromZip {
+    input:
+    path genome_ziped_file
 
     output:
-    path "salmonella_genome.fna.gz"
+    path "ncbi_dataset/data/${params.salmonella_id}/*"
 
     script:
-    output_filename="salmonella_genome.fna.gz"
-    url = params.salmonella_ref_genome_ftp_url
-    template "get_request_using_curl.sh"
+    """
+    unzip ${genome_ziped_file}
+    """
 }
 
-process downloadSalmonellaFeatureTable {
-
-    publishDir params.cache_dir, mode: 'copy'
-
-    output:
-    path "salmonella_feature_table.txt"
-
-    script:
-    output_filename="salmonella_feature_table.txt"
-    url = params.salmonella_features_table_url
-    template "get_request_using_curl.sh"
-}
-
-process makeBlastDB {
-    container 'ncbi/blast'
+process mergeResultsAndExpected {
 
     input:
-    path genome_file
+    tuple val(scenarioAndWordSize), path('genome'), path('cds'), path('expected')
 
     output:
-    path "SalmonellaDB"
+    path("${scenarioAndWordSize}_results.csv")
 
+    //TODO this should be moved to a .py for clearity
     script:
     """
-    mkdir -p 'SalmonellaDB'
-    cd 'SalmonellaDB' && makeblastdb -in ../${genome_file} -dbtype nucl -out salmonella_genome_db -title 'SalmonellaDB'
+    #!/usr/bin/python3
+    import pandas as pd
+
+    full_genomeAlignments_df = pd.read_csv('genome', sep='\t')
+    cds_alignments_df = pd.read_csv('cds', sep='\t')
+    expected_results_df = pd.read_csv('expected', sep=',')
+
+    merged_df = full_genomeAlignments_df.merge(cds_alignments_df, on='qseqid', how='outer', suffixes=('_genome','_cds'))
+    merged_df = merged_df.merge(expected_results_df, left_on='qseqid', right_on='query_id', how='right', suffixes=('','_expected'))
+    merged_df.to_csv('${scenarioAndWordSize}_results.csv', sep=',')
     """
 }
 
-process unzipGenome {
-    input:
-    path genome_gz_file
-
-    output:
-    path "salmonella_genome.fna"
-
-    script:
-    """
-    gzip -fd ${genome_gz_file}
-    """
-}
-
-process alignLocally {
-    container 'ncbi/blast'
-
-    input:
-    tuple path(query_file), path(db_file), val(blast_word_sz)
-
-    output:
-    tuple val(prefix), path("alignments_results.tsv")
-
-    script:
-    prefix = getScenarioFromFileName(query_file) + "w${blast_word_sz}"
-    """
-    blastn -query ${query_file} -word_size ${blast_word_sz} -db ${db_file}/salmonella_genome_db -out alignments_results.tsv -outfmt "6 qseqid qgi qacc qaccver qlen sseqid sallseqid sgi sallgi sacc saccver sallacc slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos frames qframe sframe btop staxids sscinames scomnames sblastnames sskingdoms stitle salltitles sstrand qcovs qcovhsp"
-    sed -i '1i qseqid\tqgi\tqacc\tqaccver\tqlen\tsseqid\tsallseqid\tsgi\tsallgi\tsacc\tsaccver\tsallacc\tslen\tqstart\tqend\tsstart\tsend\tqseq\tsseq\tevalue\tbitscore\tscore\tlength\tpident\tnident\tmismatch\tpositive\tgapopen\tgaps\tppos\tframes\tqframe\tsframe\tbtop\tstaxids\tsscinames\tscomnames\tsblastnames\tsskingdoms\tstitle\tsalltitles\tsstrand\tqcovs\tqcovhsp' alignments_results.tsv
-    """
-}
 
 workflow {
 
-    downloadSalmonellaFeatureTable()
-
-    // download salmonella genome
-    salmonella_gz_genome_ch = downloadSalmonellaGenome()
+    salmonellaZipedDataset_ch = downloadSalmonellaDataset( channel.of(params.salmonella_id) )
+    salmonellaDataset_ch = extractGenomeDataFromZip(salmonellaZipedDataset_ch).flatten()
     
-    salmonella_gz_genome_ch.collectFile(
-            name: "salmonella_genome.fna.gz",
-            storeDir: params.output_dir
-        )
-
-    salmonella_genome_ch = unzipGenome(salmonella_gz_genome_ch)
-
-    // make blast db
-    salmonella_db_ch = makeBlastDB(salmonella_genome_ch)
+    salmonellaGenome_ch = salmonellaDataset_ch.filter { it -> it.getName() == genomeFilename }
+    salmonellaCDS_ch = salmonellaDataset_ch.filter { it -> it.getName() == cdsFilename }
 
     // create fasta files from sup data
-    queries_ch = createFastaFilesFromSupData(params.data_file).flatten()
+    queriesAndExpected_ch  = createFastaFilesFromSupData(params.data_file)
+    queries_ch = queriesAndExpected_ch.queries.flatten()
+    expectedResults_ch = queriesAndExpected_ch.expected.flatten()
     
-    // queries_ch.count().view(it -> "Number of queries: ${it}")
     queries_ch.collectFile(
         storeDir: "$params.output_dir/queries"
     )
 
-    // load queries from fasta files
-    splited_queries_ch = queries_ch
-        .splitFasta(by: params.queries_files_chunk_sizes, file:true)
-
-    splited_queries_ch.countFasta().view(c -> "Number of queries: ${c}")
+    expectedResults_ch.collectFile(
+        storeDir: "$params.output_dir/expected_alignments_results"
+    )
     
-    // add word sizes to blast input channel
-    blast_word_sz_list = getWordSizesFromStringParam(params.blast_word_sizes)
-    blast_word_sz_ch = channel.from(blast_word_sz_list)
+    // run blast against full genome
+    blastFullGenomeResults_ch = blastWFFullGenome(queries_ch, salmonellaGenome_ch)
+    fullGenomeAlignments_ch = blastFullGenomeResults_ch.aligmentsResults_ch
+    fullGenomeAlignments_ch.countLines().view(it -> "Number genomic alginments ${it}")
+    fullGenomeAlignments_ch.collectFile(
+        storeDir: "$params.output_dir/full_genome_alignments"
+    )
 
-    blast_word_sz_ch
+    // run blast against cds
+    blastResultsCDS_ch = blastWFCDS(queries_ch, salmonellaCDS_ch)
+    cds_alignments_ch = blastResultsCDS_ch.aligmentsResults_ch
+    cds_alignments_ch.countLines().view(it -> "Number CDS alginments ${it}")
+    cds_alignments_ch.collectFile(
+        storeDir: "$params.output_dir/cds_alignments"
+    )
 
-    // combine queries and db before calling alignLocally
-    blast_inputs_ch = splited_queries_ch
-                        .combine(salmonella_db_ch)
-                        .combine(blast_word_sz_ch)
-
-    aligments_ch = alignLocally(blast_inputs_ch)
+    // merge results
+    keyFileGenomeAlignment_ch = fullGenomeAlignments_ch.map(it -> [getScenarioWordSizeKey(it), it])
+    keyFileGenomeCDS_ch =  cds_alignments_ch.map(it -> [getScenarioWordSizeKey(it), it])
     
-    // store output 
-    aligments_ch.map( it -> mapAlignedTuplesToGroupChunks(it) )
-                .collectFile(
-                    keepHeader: true,
-                    storeDir: params.output_dir
-                )
+    keyFileExpectedResults_ch = expectedResults_ch.map(it -> [getScenarionFromFilename(it.getName()), it])
+
+    filesToMerge = keyFileGenomeAlignment_ch
+                        .join(keyFileGenomeCDS_ch)
+                        .map(it -> [getScenarionFromFilename(it[0]), it[0], it[1], it[2]])
+                        .combine(keyFileExpectedResults_ch, by:0)
+                        .map(it -> [it[1],it[2],it[3],it[4]] )
+
+    filesToMerge.count().view(it -> "Merging ${it} files")
+    // filesToMerge.view()
+    mergedResults_ch = mergeResultsAndExpected(filesToMerge)
+    mergedResults_ch.collectFile(
+        storeDir: "$params.output_dir"
+    )
 }
 

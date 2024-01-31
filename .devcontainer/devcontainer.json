@@ -34,10 +34,15 @@
 				"ms-toolsai.vscode-jupyter-powertoys",
 				"demystifying-javascript.python-extensions-pack",
 				"streetsidesoftware.code-spell-checker-portuguese",
-				"streetsidesoftware.code-spell-checker-portuguese-brazilian"
+				"streetsidesoftware.code-spell-checker-portuguese-brazilian",
+				"MellowMarshmallow.groovy",
+				"marlon407.code-groovy"
 			]
 		}
 	},
+	"mounts": [
+		"type=volume,src=nfwrk,dst=/nf"
+	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],

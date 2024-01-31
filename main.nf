@@ -4,13 +4,13 @@ nextflow.enable.dsl=2
 params.output_dir = "$baseDir/output"
 params.data_file = "$baseDir/data/Liu_sup5_data.xlsx"
 params.cache_dir = "$baseDir/data"
-params.queries_files_chunk_sizes = 10
+params.queries_files_chunk_sizes = 20
 
 params.salmonella_id = "GCF_000210855.2"
 
 genomeFilename = "GCF_000210855.2_ASM21085v2_genomic.fna"
 cdsFilename = "cds_from_genomic.fna"
-params.blast_word_sizes = "4,7,11,15"
+params.blast_word_sizes = "7,9,11,15"
 
 include { blast_wf as blastWFFullGenome } from "./module.blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
                                                     wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
@@ -82,6 +82,7 @@ process extractGenomeDataFromZip {
 }
 
 process mergeResultsAndExpected {
+
     input:
     tuple val(scenarioAndWordSize), path('genome'), path('cds'), path('expected')
 
@@ -129,7 +130,7 @@ workflow {
     // run blast against full genome
     blastFullGenomeResults_ch = blastWFFullGenome(queries_ch, salmonellaGenome_ch)
     fullGenomeAlignments_ch = blastFullGenomeResults_ch.aligmentsResults_ch
-    fullGenomeAlignments_ch.count().view(it -> "Full genome alignments ${it} files")
+    fullGenomeAlignments_ch.countLines().view(it -> "Number genomic alginments ${it}")
     fullGenomeAlignments_ch.collectFile(
         storeDir: "$params.output_dir/full_genome_alignments"
     )
@@ -137,10 +138,10 @@ workflow {
     // run blast against cds
     blastResultsCDS_ch = blastWFCDS(queries_ch, salmonellaCDS_ch)
     cds_alignments_ch = blastResultsCDS_ch.aligmentsResults_ch
+    cds_alignments_ch.countLines().view(it -> "Number CDS alginments ${it}")
     cds_alignments_ch.collectFile(
         storeDir: "$params.output_dir/cds_alignments"
     )
-    cds_alignments_ch.count().view(it -> "CDS alignments ${it} files")
 
     // merge results
     keyFileGenomeAlignment_ch = fullGenomeAlignments_ch.map(it -> [getScenarioWordSizeKey(it), it])

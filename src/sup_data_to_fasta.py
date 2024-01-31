@@ -76,10 +76,13 @@ def map_SeqRecords_to_fasta(seq_records):
         bio_dfs[k+"_RNA2"] = df2.apply(axis=1, func=lambda x: map_record_to_SeqRecord(x))
         
         
-        expected_dfs[k+"_RNA1"] = pd.concat([df1.name, bio_dfs[k+"_RNA1"].map(lambda i: i.id)], axis=1)
-        expected_dfs[k+"_RNA1"].rename(columns={"name": "expected", 0: "query_id"}, inplace=True)
-        expected_dfs[k+"_RNA2"] = pd.concat([df1.name, bio_dfs[k+"_RNA2"].map(lambda i: i.id)], axis=1)
-        expected_dfs[k+"_RNA2"].rename(columns={"name": "expected", 0: "query_id"}, inplace=True)
+        expected_df_RNA1 = pd.concat([df1.name, bio_dfs[k+"_RNA1"].map(lambda i: i.id)], axis=1)
+        expected_df_RNA1.rename(columns={"name": "expected", 0: "query_id"}, inplace=True)
+        expected_df_RNA2 = pd.concat([df1.name, bio_dfs[k+"_RNA2"].map(lambda i: i.id)], axis=1)
+        expected_df_RNA2.rename(columns={"name": "expected", 0: "query_id"}, inplace=True)
+        
+        expected = pd.concat([expected_df_RNA1, expected_df_RNA2], ignore_index=True)
+        expected_dfs[k] = expected
         
     return bio_dfs, expected_dfs
 

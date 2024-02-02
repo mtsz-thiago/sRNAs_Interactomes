@@ -33,10 +33,9 @@ def flatten_df(df):
 def extract_queries_and_expected(df):
     flattened_df = flatten_df(df)
     deduplicated_df = deduplicate_queries_by_seq(flattened_df)
-    With_query_id = add_query_id_column(deduplicated_df)
-    bio_df = map_to_fasta(With_query_id)
-    expected_df = map_to_expected(With_query_id)
-    return bio_df, expected_df
+    with_query_id = add_query_id_column(deduplicated_df)
+    bio_df = map_to_fasta(with_query_id)
+    return bio_df, with_query_id
 
 def map_raw_data_to_queries_and_expected(df_dict):
     queries_dict = {}
@@ -58,11 +57,6 @@ def load_xlsx(input_file):
 
 def map_to_fasta(df):
     return df.apply(axis=1, func=map_record_to_SeqRecord)
-
-def map_to_expected(df):
-    expected = df[['name', 'query_id']]
-    expected.rename(columns={"name": "expected"}, inplace=True)
-    return expected
 
 def map_record_to_SeqRecord(r):
     strand_code = 1 if r[f"Strand"] == "+" else -1

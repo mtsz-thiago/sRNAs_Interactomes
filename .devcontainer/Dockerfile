@@ -23,3 +23,6 @@ RUN curl -s https://get.nextflow.io > nextflow
 
 RUN mv nextflow /usr/local/bin/
 RUN chmod +x /usr/local/bin/nextflow
+
+RUN mkdir /nf && chmod 777 /nf
+ENV NXF_LOG_FILE=/nf/nextflow.log

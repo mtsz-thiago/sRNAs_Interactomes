@@ -9,50 +9,64 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.Blast import NCBIWWW, NCBIXML
+import uuid
 
-def deduplicate_with_largest(df):
-    return df.loc[df.groupby("name")["seq"].idxmax()]
+def deduplicate_queries_by_seq(df):
+    duplicated_seqs = df.seq.duplicated()
+    return df[~duplicated_seqs]
 
-def from_pair_to_single_seq_record_df(df):
+def flatten_df(df):
     
-    RNA1_related_columns = [k for k in df.columns if "RNA1" in k]
-    RNA2_related_columns = [k for k in df.columns if "RNA2" in k]
-    not_RNA1_or_RNA2_related = [k for k in df.columns if k not in RNA1_related_columns and k not in RNA2_related_columns]
-    common_columns_suffixes = [k.split(" ")[1] for k in RNA1_related_columns]
-
-    rna1_df = df[not_RNA1_or_RNA2_related + RNA1_related_columns].copy()
-    rna2_df = df[not_RNA1_or_RNA2_related + RNA2_related_columns].copy()
-
-    rna1_suffixes_dict = {k:v for k,v in zip(RNA1_related_columns, common_columns_suffixes)}
-    rna1_df.rename(columns=rna1_suffixes_dict, inplace=True)
-    rna1_df["origin"] = "RNA1"
-
-    rna2_suffixes_dict = {k:v for k,v in zip(RNA2_related_columns, common_columns_suffixes)}
-    rna2_df.rename(columns=rna2_suffixes_dict, inplace=True)
-    rna2_df["origin"] = "RNA2"
+    dfRNA1 = df[[c for c in df.columns if 'RNA2' not in c]]
+    rna1columnsMap = {c:c.strip('RNA1').strip() for c in dfRNA1.columns if 'RNA1' in c}
+    dfRNA1 = dfRNA1.rename(columns=rna1columnsMap)
+    dfRNA1['origin'] = 'RNA1'
+    dfRNA2 = df[[c for c in df.columns if 'RNA1' not in c]]
+    rna2columnsMap = {c:c.strip('RNA2').strip() for c in dfRNA2.columns if 'RNA2' in c}
+    dfRNA2 = dfRNA2.rename(columns=rna2columnsMap)
+    dfRNA1['origin'] = 'RNA1'
     
-    queries_df = pd.concat([rna1_df, rna2_df], ignore_index=True)
-    large_seq_queries_df = deduplicate_with_largest(queries_df)
+    flattened_df = pd.concat([dfRNA1, dfRNA2], ignore_index=True)
     
-    return large_seq_queries_df
+    return flattened_df
 
-def transform_raw_dfs_to_queries(raw_dfs_dict):
-    return {k: from_pair_to_single_seq_record_df(v) for k,v in raw_dfs_dict.items()}
+def extract_queries_and_expected(df):
+    flattened_df = flatten_df(df)
+    deduplicated_df = deduplicate_queries_by_seq(flattened_df)
+    with_query_id = add_query_id_column(deduplicated_df)
+    bio_df = map_to_fasta(with_query_id)
+    return bio_df, with_query_id
+
+def map_raw_data_to_queries_and_expected(df_dict):
+    queries_dict = {}
+    expected_dict = {}
+    for k, df in df_dict.items():
+        bio_df, expected_df = extract_queries_and_expected(df)
+        queries_dict[k] = bio_df
+        expected_dict[k] = expected_df
+    return queries_dict, expected_dict
+
+def add_query_id_column(df):
+    df['query_id'] = df.apply(lambda x: str(uuid.uuid1()), axis=1)
+    return df
 
 def load_xlsx(input_file):
     sup_dict = pd.read_excel(input_file, sheet_name=None)
     sup_dict = {k.replace('+', '_'): v for k, v in sup_dict.items() if k != 'Legend'}
     return sup_dict
 
+def map_to_fasta(df):
+    return df.apply(axis=1, func=map_record_to_SeqRecord)
+
 def map_record_to_SeqRecord(r):
     strand_code = 1 if r[f"Strand"] == "+" else -1
-    id = r[f"name"]
-    name = r[f"name"]
+    id = r['query_id']
+    name = id
     seq = Seq(r[f"seq"])
     from_pos = r[f"from"]
     to_pos = r[f"to"]
     type = r[f"type"]
-    description = id + ' origin: ' + r["origin"]
+    description = f"{id} origin: {r.origin} expected {r.name}"
     return SeqRecord(
         id=id,
         description=description,
@@ -62,17 +76,18 @@ def map_record_to_SeqRecord(r):
         name=name, 
         seq=seq)
 
-def map_SeqRecords_to_fasta(seq_records):
-    bio_dfs = {}
-    for k, df in seq_records.items():
-        bio_dfs[k+"_RNA1"] = df[df.origin == 'RNA1'].apply(axis=1, func=lambda x: map_record_to_SeqRecord(x))
-        bio_dfs[k+"_RNA2"] = df[df.origin == 'RNA2'].apply(axis=1, func=lambda x: map_record_to_SeqRecord(x))
-    return bio_dfs
-
-def write_fasta(seq_records, output):
+def write_csvs(seq_records, expected, output):
+    
+    if not os.path.exists(f"{output}/queries"): 
+        os.makedirs(f"{output}/queries")
+    if not os.path.exists(f"{output}/expected"): 
+        os.makedirs(f"{output}/expected")
     
     for k, df in seq_records.items():
-        SeqIO.write(df, f"{output}/{k}.fa", "fasta")
+        SeqIO.write(df, f"{output}/queries/{k}.fa", "fasta")
+        
+    for k, df in expected.items():
+        df.to_csv(f"{output}/expected/{k}.csv", index=False)
 
 def main(input_file, output_dir):    
     if not os.path.exists(output_dir): 
@@ -80,10 +95,9 @@ def main(input_file, output_dir):
     
     sup_data_dict = load_xlsx(input_file)
     
-    queries_dict = transform_raw_dfs_to_queries(sup_data_dict)
+    queries_dict, expected_dict = map_raw_data_to_queries_and_expected(sup_data_dict)
 
-    seg_records_dict = map_SeqRecords_to_fasta(queries_dict)
-    write_fasta(seg_records_dict, output_dir)
+    write_csvs(queries_dict, expected_dict, output_dir)
    
 
 if __name__ == "__main__":

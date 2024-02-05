@@ -84,6 +84,16 @@ As described in the supplementary data, the reference genome used is [Salmonella
    <img src="./docs/dag.png" style="text-align: center; width: 70%; border: 1px;margin: auto"/>
 </dib>
 
+## Modeling
+
+We can model the results from the pipeline as a induced graph of interactions between aligned sequences by the graph of measured interactions (the chimeras).
+
+> Hypothesis: The interaction graph induced by chimeras interactions measured may help to deduplicate the aligned sequences map somehow.
+
+<div class="center">
+   <img src="./docs/sequence-aligned project net.png" style="text-align: center; width: 70%; border: 1px;margin: auto"/>
+</dib>
+
 ## References
 
 1. Liu, F., Chen, Z., Zhang, S., Wu, K., Bei, C., Wang, C., & Chao, Y. (2023). In vivo RNA interactome profiling reveals 3’UTR-processed small RNA targeting a central regulatory hub. Nature Communications, 14(1), 8106. https://doi.org/10.1038/s41467-023-43632-1

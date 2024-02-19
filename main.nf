@@ -105,6 +105,19 @@ process mergeResultsAndExpected {
     """
 }
 
+process dataToInteractomeGraph {
+    input:
+    path dataFile
+
+    output:
+    path outputFilename
+
+    script:
+    outputFilename = "${dataFile.baseName}.gml"
+    """
+    python3 $projectDir/src/graph_interactome.py --data_csv_path ${dataFile} --output_path ${outputFilename}
+    """
+}
 
 workflow {
 
@@ -127,6 +140,11 @@ workflow {
         storeDir: "$params.output_dir/expected_alignments_results"
     )
     
+    interactomeGraphs_ch = dataToInteractomeGraph(expectedResults_ch)
+    interactomeGraphs_ch.collectFile(
+        storeDir: "$params.output_dir/interactome_graphs"
+    )
+
     // run blast against full genome
     blastFullGenomeResults_ch = blastWFFullGenome(queries_ch, salmonellaGenome_ch)
     fullGenomeAlignments_ch = blastFullGenomeResults_ch.aligmentsResults_ch

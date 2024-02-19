@@ -3,6 +3,7 @@ import sup_data_to_fasta as sdtf
 from collections import Counter
 import itertools
 import pickle
+import argparse
 import networkx as nx
 import os
 import re
@@ -69,7 +70,7 @@ def convert_case(columns):
     new_columns = [re.sub(r'[_\s\'\-]([a-zA-Z])', lambda x: x.group(1).upper(), col) for col in columns]
     return new_columns
 
-def load_sRNA_interactome_graph(data_csv_path, kmer_sz=4):
+def load_sRNA_interactome_graph(data_csv_path, kmer_sz=4, output_file=None):
 
     # Extract the name from the basename of data_csv_path without extension
     name = os.path.splitext(os.path.basename(data_csv_path))[0]
@@ -89,8 +90,17 @@ def load_sRNA_interactome_graph(data_csv_path, kmer_sz=4):
     nodes_properties = convert_case(nodes_properties)
     
     graph = create_chimera_graph(data_df, name, nodes_properties, edges_properties) 
-    
-    nx.write_gml(graph, name + ".gml")
+    if output_file:
+        nx.write_gml(graph, output_file)
+        
+    return graph
 
 if __name__ == "__main__":
-    pass
+    parser = argparse.ArgumentParser(description="Load sRNA interactome graph")
+    parser.add_argument("--data_csv_path", type=str, help="Path to the data CSV file")
+    parser.add_argument("--output_path", type=str, help="Path to the data CSV file")
+    parser.add_argument("--kmer_sz", type=int, default=4, help="Size of k-mers (default: 4)")
+    
+    args = parser.parse_args()
+    
+    load_sRNA_interactome_graph(args.data_csv_path, args.kmer_sz, args.output_path)

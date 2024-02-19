@@ -17,6 +17,8 @@ include { blast_wf as blastWFFullGenome } from "./module/blast" params(  queries
 include { blast_wf as blastWFCDS } from "./module/blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
                                                     wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
 
+include { interactomeModeling_wf as graphModelingWF } from "./module/graph" params(kmer_sz: 4)
+
 def getScenarioWordSizeKey(queryFilePath) {
     return queryFilePath.getName().split("\\.")[0]
 }
@@ -105,20 +107,6 @@ process mergeResultsAndExpected {
     """
 }
 
-process dataToInteractomeGraph {
-    input:
-    path dataFile
-
-    output:
-    path outputFilename
-
-    script:
-    outputFilename = "${dataFile.baseName}.gml"
-    """
-    python3 $projectDir/src/graph_interactome.py --data_csv_path ${dataFile} --output_path ${outputFilename}
-    """
-}
-
 workflow {
 
     salmonellaZipedDataset_ch = downloadSalmonellaDataset( channel.of(params.salmonella_id) )
@@ -140,8 +128,8 @@ workflow {
         storeDir: "$params.output_dir/expected_alignments_results"
     )
     
-    interactomeGraphs_ch = dataToInteractomeGraph(expectedResults_ch)
-    interactomeGraphs_ch.collectFile(
+    interactomeGraphs_ch = graphModelingWF(expectedResults_ch)
+    interactomeGraphs_ch.graphs_ch.collectFile(
         storeDir: "$params.output_dir/interactome_graphs"
     )
 

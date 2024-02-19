@@ -1,5 +1,4 @@
 import pandas as pd
-import sup_data_to_fasta as sdtf
 from collections import Counter
 import itertools
 import pickle

@@ -30,13 +30,17 @@ process addFeaturesToGraph {
 
     import networkx as nx
     from Bio import pairwise2
+    from Bio.Align import substitution_matrices
+
+    substitution_matrix = substitution_matrices.load('BLOSUM62') 
+
 
     def add_alignmets_socres_to_edges(graph):
         for u, v, d in graph.edges(data=True):
             seq1 = graph.nodes[u]['seq']
             seq2 = graph.nodes[v]['seq']
-            alignments = pairwise2.align.globalxx(seq1, seq2)
-            d['alignmentScore'] = alignments[0].score
+            alignmentScore = pairwise2.align.globaldx(seq1, seq2, substitution_matrix, score_only=True)
+            d['alignmentScore'] = alignmentScore
         
         return graph
 

@@ -49,7 +49,7 @@ def create_chimera_graph(data_df, gname, nodes_properties, edges_properties):
         
         # Add the properties to the node
         for att in nodes_properties:
-            nx.set_node_attributes(G, row[att], att)
+            G.nodes[query_id][att] = row[att]
 
         # Find other nodes with the same chimera_idx
         nodes_with_same_chimera = data_df[data_df['chimeraIdx'] == chimera_idx]['queryId']
@@ -78,9 +78,7 @@ def load_sRNA_interactome_graph(data_csv_path, kmer_sz=4, output_file=None):
     edges_properties = ['from', 'to', 'ligation from', 'ligation to', "Odds Ratio", "Fisher's exact test p-value", "Number of interactions"]
     nodes_properties = ['type', 'Strand','origin']
     
-    kmers_code = get_kmer_code(kmer_sz)
     data_df = to_numeric_data(data_df, nodes_properties, edges_properties)
-    # encode_kmer_data(data_df, kmers_code, kmer_sz)
     nodes_properties.append('seq')
     
     new_columns = convert_case(data_df.columns)

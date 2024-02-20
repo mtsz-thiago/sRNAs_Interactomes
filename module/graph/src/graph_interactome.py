@@ -80,7 +80,7 @@ def load_sRNA_interactome_graph(data_csv_path, kmer_sz=4, output_file=None):
     
     kmers_code = get_kmer_code(kmer_sz)
     data_df = to_numeric_data(data_df, nodes_properties, edges_properties)
-    encode_kmer_data(data_df, kmers_code, kmer_sz)
+    # encode_kmer_data(data_df, kmers_code, kmer_sz)
     nodes_properties.append('seq')
     
     new_columns = convert_case(data_df.columns)

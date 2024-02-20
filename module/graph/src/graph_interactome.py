@@ -61,7 +61,9 @@ def create_chimera_graph(data_df, gname, nodes_properties, edges_properties):
                 G.add_edge(query_id, node)
                 
                 edges_att[(node, query_id)] = {att: row[att] for att in edges_properties}
-                nx.set_edge_attributes(G, edges_att)
+                edges_att[(node, query_id)]['origin'] = 'chimera'
+                for att in edges_properties:
+                    G.edges[(node, query_id)][att] = row[att]
     
     return G
 

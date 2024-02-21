@@ -58,7 +58,8 @@ workflow blast_wf {
         
     alignments_ch = alignLocally(blastInputs_ch)
     groupedAlignments_ch = alignments_ch.collectFile(
-                            item -> [item[0], item[1]]
+                            item -> [item[0], item[1]],
+                            keepHeader: true,
                         )
 
     emit:

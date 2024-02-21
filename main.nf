@@ -127,11 +127,6 @@ workflow {
     expectedResults_ch.collectFile(
         storeDir: "$params.output_dir/expected_alignments_results"
     )
-    
-    interactomeGraphs_ch = graphModelingWF(expectedResults_ch)
-    interactomeGraphs_ch.graphs_ch.collectFile(
-        storeDir: "$params.output_dir/interactome_graphs"
-    )
 
     // run blast against full genome
     blastFullGenomeResults_ch = blastWFFullGenome(queries_ch, salmonellaGenome_ch)
@@ -147,6 +142,11 @@ workflow {
     cds_alignments_ch.countLines().view(it -> "Number CDS alginments ${it}")
     cds_alignments_ch.collectFile(
         storeDir: "$params.output_dir/cds_alignments"
+    )
+
+    interactomeGraphs_ch = graphModelingWF(expectedResults_ch, fullGenomeAlignments_ch)
+    interactomeGraphs_ch.graphs_ch.collectFile(
+        storeDir: "$params.output_dir/interactome_graphs"
     )
 
     // merge results

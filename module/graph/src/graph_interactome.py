@@ -60,10 +60,9 @@ def create_chimera_graph(data_df, gname, nodes_properties, edges_properties):
             if node != query_id:
                 G.add_edge(query_id, node)
                 
-                edges_att[(node, query_id)] = {att: row[att] for att in edges_properties}
-                edges_att[(node, query_id)]['origin'] = 'chimera'
-                for att in edges_properties:
+                for att in edges_properties:    
                     G.edges[(node, query_id)][att] = row[att]
+                G.edges[(node, query_id)]['origin'] = 'chimera'
     
     return G
 

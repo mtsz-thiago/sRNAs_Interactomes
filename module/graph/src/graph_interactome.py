@@ -7,33 +7,6 @@ import networkx as nx
 import os
 import re
 
-def get_kmer_code(k):
-    nts=['A','C','G','T']
-    kmer_code = {}
-    for i, kmer in enumerate(itertools.product(nts, repeat=k)):
-        kmer_code[''.join(kmer)] = i
-    
-    return kmer_code
-
-def to_kmer_vec(seq, k, kmers_codes):
-    kmer_vec = [0]*(4**k)
-    kmers_counts = Counter([seq[i:i+k] for i in range(len(seq)-k+1)])
-    kmer_vec = [kmers_counts.get(kmer, 0) for kmer in kmers_codes]
-    return kmer_vec
-
-def to_numeric_data(df, nodes_properties, edges_properties):
-    for prop in edges_properties:
-        df[prop] = pd.to_numeric(df[prop], errors='coerce')
-        df[prop].fillna(-1, inplace=True)
-
-    for prop in nodes_properties:
-        df[prop] = df[prop].astype("category")
-    return df
-
-def encode_kmer_data(df, kmers_code, kmer_sz):
-    df['seq'] = df['seq'].apply(lambda x: to_kmer_vec(x, kmer_sz, kmers_code))
-    return df
-
 def create_chimera_graph(data_df, gname, nodes_properties, edges_properties):
     
     # Create an empty graph
@@ -62,7 +35,6 @@ def create_chimera_graph(data_df, gname, nodes_properties, edges_properties):
                 
                 for att in edges_properties:    
                     G.edges[(node, query_id)][att] = row[att]
-                G.edges[(node, query_id)]['origin'] = 'chimera'
     
     return G
 
@@ -76,11 +48,11 @@ def load_sRNA_interactome_graph(data_csv_path, kmer_sz=4, output_file=None):
     name = os.path.splitext(os.path.basename(data_csv_path))[0]
     
     data_df = pd.read_csv(data_csv_path)
-    edges_properties = ['from', 'to', 'ligation from', 'ligation to', "Odds Ratio", "Fisher's exact test p-value", "Number of interactions"]
-    nodes_properties = ['type', 'Strand','origin']
+    data_df['origin'] = 'chimera'
+    edges_properties = ['from', 'to', 'ligation from', 'ligation to', "Odds Ratio", "Fisher's exact test p-value", "Number of interactions", 'origin']
+    nodes_properties = ['type', 'Strand', 'seq', 'origin']
     
-    data_df = to_numeric_data(data_df, nodes_properties, edges_properties)
-    nodes_properties.append('seq')
+    # data_df = to_numeric_data(data_df, nodes_properties, edges_properties)
     
     new_columns = convert_case(data_df.columns)
     data_df.rename(columns=dict(zip(data_df.columns, new_columns)), inplace=True)

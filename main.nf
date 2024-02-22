@@ -145,7 +145,10 @@ workflow {
     )
 
     interactomeGraphs_ch = graphModelingWF(expectedResults_ch, fullGenomeAlignments_ch)
-    interactomeGraphs_ch.graphs_ch.collectFile(
+    interactomeGraphs_ch.graphsGML_ch.collectFile(
+        storeDir: "$params.output_dir/interactome_graphs"
+    )
+    interactomeGraphs_ch.graphsDF_ch.flatten().collectFile(
         storeDir: "$params.output_dir/interactome_graphs"
     )
 

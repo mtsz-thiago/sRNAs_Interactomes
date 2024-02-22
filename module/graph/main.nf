@@ -27,9 +27,10 @@ process addFeaturesToGraph {
     path graphFile
 
     output:
-    path graphFile
+    path outputFilename
 
     script:
+    outputFilename = "${graphFile.baseName.split('_')[0]}_w_features.gml"
     """
     #!/usr/bin/env python3
 
@@ -51,7 +52,7 @@ process addFeaturesToGraph {
     G = nx.read_gml('$graphFile')
     G_w_features = add_alignmets_scores_to_edges(G)
 
-    nx.write_gml(G_w_features, '$graphFile')
+    nx.write_gml(G_w_features, '${outputFilename}')
     """
 }
 
@@ -60,9 +61,10 @@ process addAlignmentsToGraph {
     tuple path(graphFile), path(alignmentsFile)
 
     output:
-    path graphFile
+    path outputFilename
 
     script:
+    outputFilename = "${graphFile.baseName.split('_')[0]}_w_alignments.gml"
     """
     #!/usr/bin/env python3
 
@@ -95,7 +97,34 @@ process addAlignmentsToGraph {
 
     G_w_alignments = add_alignments_to_graph(G, alignments_df, node_properties, edge_properties)
 
-    nx.write_gml(G_w_alignments, '$graphFile')
+    nx.write_gml(G_w_alignments, '${outputFilename}')
+    """
+}
+
+process createNodeAndEdgesDataframes {
+    input:
+    path graphFile
+
+    output:
+    tuple path(nodesOutputFilename), path(edgesOutputFilename)
+
+    script:
+    nodesOutputFilename = "${graphFile.baseName}_nodes.csv"
+    edgesOutputFilename = "${graphFile.baseName}_edges.csv"
+    """
+    #!/usr/bin/env python3
+
+    import pandas as pd
+    import networkx as nx
+
+    G = nx.read_gml('${graphFile}')
+
+    nodes_df = pd.DataFrame([{'id': n, **d} for n, d in G.nodes(data=True)])
+    edges_df = pd.DataFrame([{**d, 'from': u, 'to': v} for u, v, d in G.edges(data=True)])
+
+    nodes_df.to_csv("${nodesOutputFilename}")
+    edges_df.to_csv("${edgesOutputFilename}")
+
     """
 }
 
@@ -112,9 +141,13 @@ workflow interactomeModeling_wf {
     keyValueAlignmests_ch = alignments_ch.map(it -> [getKeyFromFilePath(it), it])
 
     graphAndAlignments_ch = keyValueGraphGML_ch.join(keyValueAlignmests_ch).map(it -> [it[1], it[2]])
-    alignment_graphs_gml_ch = addAlignmentsToGraph( graphAndAlignments_ch)
+    alignmentGraphsGML_ch = addAlignmentsToGraph( graphAndAlignments_ch)
+
+    graphsEdgesAndNodesDF_ch = createNodeAndEdgesDataframes(alignmentGraphsGML_ch)
 
     emit:
-    graphs_ch = alignment_graphs_gml_ch
+    graphsGML_ch = alignmentGraphsGML_ch
+    graphsDF_ch = graphsEdgesAndNodesDF_ch
+
 }
 

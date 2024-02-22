@@ -40,16 +40,16 @@
 		}
 	},
 	"runArgs": [
+		"-p", "8000:8000",
 		"--runtime=nvidia",
-		"--gpus",
-		"all"
+		"--gpus", "all"
 	],
 	"mounts": [
 		"type=volume,src=nfwrk,dst=/nf"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	"forwardPorts": [8000],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "nextflow -version && pip install --upgrade pip && pip install -r requirements.txt"

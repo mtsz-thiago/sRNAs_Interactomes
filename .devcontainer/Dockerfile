@@ -6,6 +6,9 @@ RUN curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --
     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
+#for gunicorn usage
+EXPOSE 8000
+
 RUN apt update && apt install -y \
     curl \
     git-flow \

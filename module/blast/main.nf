@@ -3,6 +3,11 @@ nextflow.enable.dsl=2
 
 params.queriesChunckSize = 10
 params.wordSizes_list = [4,7,11,15]
+params.blastCullingLimit = 2
+params.blastHSQSLimit = 50
+params.minAlignmentCoverage = 0.9
+
+blastOuputColumns = ['qseqid', 'qgi', 'qacc', 'qaccver', 'qlen', 'sseqid', 'sallseqid', 'sgi', 'sallgi', 'sacc', 'saccver', 'sallacc', 'slen', 'qstart', 'qend', 'sstart', 'send', 'qseq', 'sseq', 'evalue', 'bitscore', 'score', 'length', 'pident', 'nident', 'mismatch', 'positive', 'gapopen', 'gaps', 'ppos', 'frames', 'qframe', 'sframe', 'btop', 'staxids', 'sscinames', 'scomnames', 'sblastnames', 'sskingdoms', 'stitle', 'salltitles', 'sstrand', 'qcovs', 'qcovhsp']
 
 def getScenarioFromFileName(queryFilePath) {
     return queryFilePath.name.split("\\.")[0].split("_")[0]
@@ -38,8 +43,22 @@ process alignLocally {
     queryBaseName = query_file.baseName
     outputFilename = "${queryBaseName}_alignments_results.tsv"
     """
-    blastn -query ${query_file} -word_size ${blast_word_sz} -db ${db_file}/salmonella_genome_db -out ${outputFilename} -outfmt "6 qseqid qgi qacc qaccver qlen sseqid sallseqid sgi sallgi sacc saccver sallacc slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos frames qframe sframe btop staxids sscinames scomnames sblastnames sskingdoms stitle salltitles sstrand qcovs qcovhsp"
-    sed -i '1i qseqid\tqgi\tqacc\tqaccver\tqlen\tsseqid\tsallseqid\tsgi\tsallgi\tsacc\tsaccver\tsallacc\tslen\tqstart\tqend\tsstart\tsend\tqseq\tsseq\tevalue\tbitscore\tscore\tlength\tpident\tnident\tmismatch\tpositive\tgapopen\tgaps\tppos\tframes\tqframe\tsframe\tbtop\tstaxids\tsscinames\tscomnames\tsblastnames\tsskingdoms\tstitle\tsalltitles\tsstrand\tqcovs\tqcovhsp' ${outputFilename}
+    blastn -query ${query_file} -word_size ${blast_word_sz} -db ${db_file}/salmonella_genome_db -out ${outputFilename} -culling_limit ${params.blastCullingLimit} -max_hsps ${params.blastHSQSLimit} -outfmt "6 ${blastOuputColumns.join(' ')}"
+    sed -i '1i ${blastOuputColumns.join('\t')}' ${outputFilename}
+    """
+}
+
+process filterHIghCovarageAlignments {
+    input:
+    file alignmentsFile
+
+    output:
+    file highCovarageAlignmentsFile
+
+    script:
+    highCovarageAlignmentsFile = "${alignmentsFile.baseName}_highCovarage.tsv"
+    """
+    awk -F'\t' '{if (\$41 > ${params.minAlignmentCoverage}) print}' ${alignmentsFile} > ${highCovarageAlignmentsFile}
     """
 }
 
@@ -64,7 +83,9 @@ workflow blast_wf {
                             keepHeader: true,
                         )
 
+    highCovarageAlignments_ch = filterHIghCovarageAlignments(groupedAlignments_ch)
+
     emit:
-    aligmentsResults_ch = groupedAlignments_ch
+    aligmentsResults_ch = highCovarageAlignments_ch
 }
 

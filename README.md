@@ -7,9 +7,17 @@ Repository for workflows, data analysis, and everything related to sRNA interact
 
 ## dependencies
 
-- [Nextflow](https://www.nextflow.io/): framework to run scientific workflows.
+> Before building devcontainer please pay attention to host dependencies
+
+### Host dependencies
+
 - [Docker](https://www.docker.com/): container framework
- 
+- [nvidia-ctk](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#installing-with-apt): Nvidia container toolkit.
+
+### Frameworks and Technologies
+
+- [Nextflow](https://www.nextflow.io/): framework to run scientific workflows.
+
 ## Running
 
 The following command should run the pipeline

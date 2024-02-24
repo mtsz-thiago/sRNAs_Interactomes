@@ -12,10 +12,12 @@ genomeFilename = "GCF_000210855.2_ASM21085v2_genomic.fna"
 cdsFilename = "cds_from_genomic.fna"
 params.blast_word_sizes = "11"
 
-include { blast_wf as blastWFFullGenome } from "./module/blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
+include { blast_wf as blastWFFullGenome} from "./module/blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
                                                     wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
+include { indexSubjectSequences as index1} from "./module/blast"
 include { blast_wf as blastWFCDS } from "./module/blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
                                                     wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
+include { indexSubjectSequences as index2} from "./module/blast"
 
 include { interactomeModeling_wf as graphModelingWF } from "./module/graph" params(kmer_sz: 4)
 
@@ -267,8 +269,8 @@ workflow {
     salmonellaZipedDataset_ch = downloadSalmonellaDataset( channel.of(params.salmonella_id) )
     salmonellaDataset_ch = extractGenomeDataFromZip(salmonellaZipedDataset_ch).flatten()
     
-    salmonellaGenome_ch = salmonellaDataset_ch.filter { it -> it.getName() == genomeFilename }
-    salmonellaCDS_ch = salmonellaDataset_ch.filter { it -> it.getName() == cdsFilename }
+    salmonellaGenome_ch = salmonellaDataset_ch.filter { it -> it.getName() == genomeFilename } | index1
+    salmonellaCDS_ch = salmonellaDataset_ch.filter { it -> it.getName() == cdsFilename } | index2
 
     chimerasData_ch = fromXLSXtoCSV(params.data_file).flatten()
 

@@ -51,7 +51,7 @@ workflow blast_wf {
 
     main:
     wordSizes_ch = channel.from(params.wordSizes_list)
-    subjectDB_ch = subjectGenomes_ch | indexSubjectSequences
+    subjectDB_ch = subjectGenomes_ch // | indexSubjectSequences
 
     blastInputs_ch = queries_ch
         .splitFasta(by: params.queriesChunckSize, file:true)

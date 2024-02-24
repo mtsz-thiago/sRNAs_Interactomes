@@ -35,7 +35,8 @@
 				"streetsidesoftware.code-spell-checker-portuguese",
 				"streetsidesoftware.code-spell-checker-portuguese-brazilian",
 				"MellowMarshmallow.groovy",
-				"marlon407.code-groovy"
+				"marlon407.code-groovy",
+				"ms-vscode-remote.remote-containers"
 			]
 		}
 	},

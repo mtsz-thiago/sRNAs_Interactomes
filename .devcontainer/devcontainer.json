@@ -21,6 +21,25 @@
 		"ghcr.io/devcontainers/features/python:1": {},
 		"ghcr.io/robsyme/features/nextflow:1": {},
 		"ghcr.io/akhildevelops/devcontainer-features/pip:0": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode-remote.remote-containers",
+				"nextflow.nextflow",
+				"MS-CEINTL.vscode-language-pack-pt-BR",
+				"KevinRose.vsc-python-indent",
+				"ms-vscode-remote.vscode-remote-extensionpack",
+				"ms-azuretools.vscode-docker",
+				"PsykoSoldi3r.vscode-git-flow",
+				"ms-vscode.cpptools",
+				"mhutchie.git-graph",
+				"GitHub.copilot",
+				"donjayamanne.githistory",
+				"MellowMarshmallow.groovy",
+				"ms-python.vscode-pylance"
+			]
+		}
 	}
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],

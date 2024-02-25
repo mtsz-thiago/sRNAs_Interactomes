@@ -1,62 +1,32 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/docker-in-docker
+// README at: https://github.com/devcontainers/templates/tree/main/src/docker-outside-of-docker-compose
 {
-	"name": "sRNAs Interactome",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	// "image": "mcr.microsoft.com/devcontainers/base:bullseye",
-	"build": {
-		"dockerfile": "Dockerfile"
+	"name": "Docker from Docker Compose",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "app",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+	// Use this environment variable if you need to bind mount your local source code into a new container.
+	"remoteEnv": {
+		"LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
 	},
+
 	"features": {
-		"ghcr.io/devcontainers/features/docker-in-docker:2": {
+		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
 			"version": "latest",
 			"enableNonRootDocker": "true",
 			"moby": "true"
-		}
-	},
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"MS-CEINTL.vscode-language-pack-pt-BR",
-				"mhutchie.git-graph",
-				"ms-python.python",
-				"mechatroner.rainbow-csv",
-				"GitHub.copilot-chat",
-				"vscjava.vscode-java-pack",
-				"nextflow.nextflow",
-				"Serhioromano.vscode-gitflow",
-				"donjayamanne.python-extension-pack",
-				"ms-toolsai.jupyter",
-				"donjayamanne.githistory",
-				"GitHub.copilot",
-				"ms-azuretools.vscode-docker",
-				"ms-toolsai.vscode-jupyter-powertoys",
-				"demystifying-javascript.python-extensions-pack",
-				"streetsidesoftware.code-spell-checker-portuguese",
-				"streetsidesoftware.code-spell-checker-portuguese-brazilian",
-				"MellowMarshmallow.groovy",
-				"marlon407.code-groovy",
-				"ms-vscode-remote.vscode-remote-extensionpack"
-			]
-		}
-	},
-	"runArgs": [
-		"-p", "8000:8000",
-		"--runtime=nvidia",
-		"--gpus", "all"
-	],
-	"mounts": [
-		"type=volume,src=nfwrk,dst=/nf"
-	],
-
+		},
+		"ghcr.io/devcontainers/features/nvidia-cuda:1": {},
+		"ghcr.io/devcontainers/features/python:1": {},
+		"ghcr.io/robsyme/features/nextflow:1": {},
+		"ghcr.io/akhildevelops/devcontainer-features/pip:0": {}
+	}
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [8000],
+	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "nextflow -version && pip install --upgrade pip && pip install -r requirements.txt"
-
-	// Configure tool-specific properties.
-	// "customizations": {},
+	// "postCreateCommand": "docker --version",
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"

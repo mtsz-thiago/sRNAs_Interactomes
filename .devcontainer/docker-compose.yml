@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  app:
+  dev:
     build: 
       context: .
       dockerfile: Dockerfile
@@ -12,7 +12,7 @@ services:
       # Update this to wherever you want VS Code to mount the folder of your project
       - ../..:/workspaces:cached
       # nextflow workspace volume
-      - nfwrk:/nf:rw
+      - nfwrk2:/nf
     environment:
       - NXF_LOG_FILE=/nf/nextflow.log
 
@@ -30,4 +30,4 @@ services:
     # (Adding the "ports" property to this file will not forward from a Codespace.)
 
 volumes:
-  nfwrk:
+  nfwrk2:

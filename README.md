@@ -7,9 +7,17 @@ Repository for workflows, data analysis, and everything related to sRNA interact
 
 ## dependencies
 
-- [Nextflow](https://www.nextflow.io/): framework to run scientific workflows.
+> Before building devcontainer please pay attention to host dependencies
+
+### Host dependencies
+
 - [Docker](https://www.docker.com/): container framework
- 
+- [nvidia-ctk](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#installing-with-apt): Nvidia container toolkit.
+
+### Frameworks and Technologies
+
+- [Nextflow](https://www.nextflow.io/): framework to run scientific workflows.
+
 ## Running
 
 The following command should run the pipeline
@@ -82,6 +90,16 @@ As described in the supplementary data, the reference genome used is [Salmonella
 
 <div class="center">
    <img src="./docs/dag.png" style="text-align: center; width: 70%; border: 1px;margin: auto"/>
+</dib>
+
+## Modeling
+
+We can model the results from the pipeline as a induced graph of interactions between aligned sequences by the graph of measured interactions (the chimeras).
+
+> Hypothesis: The interaction graph induced by chimeras interactions measured may help to deduplicate the aligned sequences map somehow.
+
+<div class="center">
+   <img src="./docs/sequence-aligned project net.png" style="text-align: center; width: 70%; border: 1px;margin: auto"/>
 </dib>
 
 ## References

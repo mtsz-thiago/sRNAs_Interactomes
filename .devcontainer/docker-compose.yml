@@ -5,7 +5,6 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
-
     volumes:
       # Forwards the local Docker socket to the container.
       - /var/run/docker.sock:/var/run/docker-host.sock 
@@ -22,17 +21,9 @@ services:
       - neo4j
     networks:
       - neo4j-net
-      - host
+      # - host
     links:
-      - neo4j:neo4j
-    # Uncomment the next four lines if you will use a ptrace-based debuggers like C++, Go, and Rust.
-    # cap_add:
-    #  - SYS_PTRACE
-    # security_opt:
-    #   - seccomp:unconfined
-
-    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally. 
-    # (Adding the "ports" property to this file will not forward from a Codespace.)
+      - neo4j
 
   neo4j:
     image: neo4j:latest
@@ -45,6 +36,7 @@ services:
       - NEO4J_AUTH=neo4j/Password
     networks:
       - neo4j-net
+    command: neo4j
 
 volumes:
   nfwrk:
@@ -53,5 +45,5 @@ volumes:
 networks:
   neo4j-net:
     driver: bridge
-  host:
-    external: true
+  # host:
+  #   external: true

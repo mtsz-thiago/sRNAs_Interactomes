@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/docker-outside-of-docker-compose
 {
-	"name": "Docker from Docker Compose",
+	"name": "interactomes",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
@@ -22,6 +22,14 @@
 		"ghcr.io/devcontainers/features/python:1": {},
 		"ghcr.io/robsyme/features/nextflow:1": {},
 		"ghcr.io/akhildevelops/devcontainer-features/pip:0": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-toolsai.vscode-jupyter-slideshow",
+				"ms-toolsai.jupyter"
+			]
+		}
 	}
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],

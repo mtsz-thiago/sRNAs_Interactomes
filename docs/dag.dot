@@ -1,0 +1,286 @@
+digraph "dag" {
+v0 [shape=point,label="",fixedsize=true,width=0.1,xlabel="Channel.of"];
+v1 [label="downloadSalmonellaDataset"];
+v0 -> v1;
+
+v1 [label="downloadSalmonellaDataset"];
+v2 [label="extractGenomeDataFromZip"];
+v1 -> v2;
+
+v2 [label="extractGenomeDataFromZip"];
+v3 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v2 -> v3;
+
+v3 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v4 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="filter"];
+v3 -> v4 [label="salmonellaDataset_ch"];
+
+v4 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="filter"];
+v15 [label="blastWFFullGenome:indexSubjectSequences"];
+v4 -> v15 [label="subjectGenomes_ch"];
+
+v3 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v5 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="filter"];
+v3 -> v5 [label="salmonellaDataset_ch"];
+
+v5 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="filter"];
+v28 [label="blastWFCDS:indexSubjectSequences"];
+v5 -> v28 [label="subjectGenomes_ch"];
+
+v6 [shape=point,label="",fixedsize=true,width=0.1];
+v7 [label="createFastaFilesFromSupData"];
+v6 -> v7 [label="data_file"];
+
+v7 [label="createFastaFilesFromSupData"];
+v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v7 -> v8;
+
+v7 [label="createFastaFilesFromSupData"];
+v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v7 -> v9;
+
+v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v10 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v8 -> v10 [label="queries_ch"];
+
+v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v12 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v9 -> v12 [label="chimeras_ch"];
+
+v10 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v11 [shape=point];
+v10 -> v11;
+
+v12 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v13 [shape=point];
+v12 -> v13;
+
+v14 [shape=point,label="",fixedsize=true,width=0.1,xlabel="Channel.from"];
+v18 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v14 -> v18 [label="wordSizes_ch"];
+
+v15 [label="blastWFFullGenome:indexSubjectSequences"];
+v17 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v15 -> v17;
+
+v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v16 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="splitFasta"];
+v8 -> v16 [label="queries_ch"];
+
+v16 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="splitFasta"];
+v17 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v16 -> v17;
+
+v17 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v18 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v17 -> v18;
+
+v18 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v19 [label="blastWFFullGenome:alignLocally"];
+v18 -> v19 [label="blastInputs_ch"];
+
+v19 [label="blastWFFullGenome:alignLocally"];
+v20 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v19 -> v20;
+
+v20 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v21 [label="blastWFFullGenome:filterHIghCovarageAlignments"];
+v20 -> v21 [label="groupedAlignments_ch"];
+
+v21 [label="blastWFFullGenome:filterHIghCovarageAlignments"];
+v22 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="countLines"];
+v21 -> v22 [label="alignments_ch"];
+
+v22 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="countLines"];
+v23 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="view"];
+v22 -> v23;
+
+v23 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="view"];
+v24 [shape=point];
+v23 -> v24;
+
+v21 [label="blastWFFullGenome:filterHIghCovarageAlignments"];
+v25 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v21 -> v25 [label="alignments_ch"];
+
+v25 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v26 [shape=point];
+v25 -> v26;
+
+v27 [shape=point,label="",fixedsize=true,width=0.1,xlabel="Channel.from"];
+v31 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v27 -> v31 [label="wordSizes_ch"];
+
+v28 [label="blastWFCDS:indexSubjectSequences"];
+v30 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v28 -> v30;
+
+v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v29 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="splitFasta"];
+v8 -> v29 [label="queries_ch"];
+
+v29 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="splitFasta"];
+v30 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v29 -> v30;
+
+v30 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v31 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v30 -> v31;
+
+v31 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v32 [label="blastWFCDS:alignLocally"];
+v31 -> v32 [label="blastInputs_ch"];
+
+v32 [label="blastWFCDS:alignLocally"];
+v33 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v32 -> v33;
+
+v33 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v34 [label="blastWFCDS:filterHIghCovarageAlignments"];
+v33 -> v34 [label="groupedAlignments_ch"];
+
+v34 [label="blastWFCDS:filterHIghCovarageAlignments"];
+v35 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="countLines"];
+v34 -> v35 [label="cds_alignments_ch"];
+
+v35 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="countLines"];
+v36 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="view"];
+v35 -> v36;
+
+v36 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="view"];
+v37 [shape=point];
+v36 -> v37;
+
+v34 [label="blastWFCDS:filterHIghCovarageAlignments"];
+v38 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v34 -> v38 [label="cds_alignments_ch"];
+
+v38 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v39 [shape=point];
+v38 -> v39;
+
+v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v40 [label="graphModelingWF:dataToChimeraGraph"];
+v9 -> v40 [label="chimeras_ch"];
+
+v40 [label="graphModelingWF:dataToChimeraGraph"];
+v41 [label="graphModelingWF:addFeaturesToGraph"];
+v40 -> v41 [label="outputFilename"];
+
+v41 [label="graphModelingWF:addFeaturesToGraph"];
+v42 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v41 -> v42 [label="outputFilename"];
+
+v42 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v44 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
+v42 -> v44 [label="keyValueGraphGML_ch"];
+
+v21 [label="blastWFFullGenome:filterHIghCovarageAlignments"];
+v43 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v21 -> v43 [label="alignments_ch"];
+
+v43 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v44 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
+v43 -> v44 [label="keyValueAlignmests_ch"];
+
+v44 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
+v45 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v44 -> v45;
+
+v45 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v46 [label="graphModelingWF:addAlignmentsToGraph"];
+v45 -> v46 [label="graphAndAlignments_ch"];
+
+v46 [label="graphModelingWF:addAlignmentsToGraph"];
+v47 [label="graphModelingWF:createNodeAndEdgesDataframes"];
+v46 -> v47 [label="outputFilename"];
+
+v47 [label="graphModelingWF:createNodeAndEdgesDataframes"];
+v52 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v47 -> v52;
+
+v46 [label="graphModelingWF:addAlignmentsToGraph"];
+v48 [label="graphModelingWF:loadToDB"];
+v46 -> v48 [label="graphFile"];
+
+v48 [label="graphModelingWF:loadToDB"];
+v49 [shape=point];
+v48 -> v49;
+
+v46 [label="graphModelingWF:addAlignmentsToGraph"];
+v50 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v46 -> v50;
+
+v50 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v51 [shape=point];
+v50 -> v51;
+
+v52 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v53 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v52 -> v53;
+
+v53 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v54 [shape=point];
+v53 -> v54;
+
+v21 [label="blastWFFullGenome:filterHIghCovarageAlignments"];
+v55 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v21 -> v55 [label="alignments_ch"];
+
+v55 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v58 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
+v55 -> v58 [label="keyFileGenomeAlignment_ch"];
+
+v34 [label="blastWFCDS:filterHIghCovarageAlignments"];
+v56 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v34 -> v56 [label="cds_alignments_ch"];
+
+v56 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v58 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
+v56 -> v58 [label="keyFileGenomeCDS_ch"];
+
+v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v57 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v9 -> v57 [label="chimeras_ch"];
+
+v57 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v60 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v57 -> v60 [label="keyFileExpectedResults_ch"];
+
+v58 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
+v59 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v58 -> v59;
+
+v59 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v60 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v59 -> v60;
+
+v60 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v61 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v60 -> v61;
+
+v61 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v62 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="count"];
+v61 -> v62 [label="filesToMerge"];
+
+v62 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="count"];
+v63 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="view"];
+v62 -> v63;
+
+v63 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="view"];
+v64 [shape=point];
+v63 -> v64;
+
+v61 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v65 [label="mergeResultsAndExpected"];
+v61 -> v65 [label="filesToMerge"];
+
+v65 [label="mergeResultsAndExpected"];
+v66 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v65 -> v66;
+
+v66 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v67 [shape=point];
+v66 -> v67;
+
+}

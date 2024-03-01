@@ -2,6 +2,9 @@
 nextflow.enable.dsl=2
 
 params.kmer_sz = 4
+params.neo4jURI = "bolt://neo4j:7687"
+params.neo4jUser = "neo4j"
+params.neo4jPassword = "Password"
 
 
 def getKeyFromFilePath(filePath) {
@@ -128,6 +131,53 @@ process createNodeAndEdgesDataframes {
     """
 }
 
+process loadToDB {
+
+    input:
+    path graphFile
+
+    output:
+    tuple val(graphName), val(numberOfNodes), val(numberOfEdges)
+
+    script:
+    graphName = graphFile.baseName
+    numberOfNodes = 0
+    numberOfEdges = 0
+    """
+    #!/usr/bin/env python3
+
+    import networkx as nx
+    from py2neo import Graph, Node, Relationship
+
+    graphName = '${graphFile.baseName}'
+
+    graph = Graph(uri = '$params.neo4jURI', user = '$params.neo4jUser', password = '$params.neo4jPassword')
+
+    graph_data = nx.read_gml('${graphFile}')
+
+    numberOfNodes = 0
+    for node in graph_data.nodes(data=True) if node['origin'] == 'chimera':
+        node_properties = node[1]
+        node_properties['id'] = node[0]
+        node_properties['graph'] =  
+        node = Node(['SEQENCE', 'CHIMERA'], **node_properties)
+        graph.create(node)
+        numberOfNodes += 1
+
+    numberOfEdges = 0
+    for edge in graph_data.edges(data=True):
+        edge_properties = edge[2]
+        edge_properties['from'] = edge[0]
+        edge_properties['to'] = edge[1]
+        edge_properties['graph'] = graphName
+        edge = Relationship(Node('CHIMERA', id = edge[0]), '', Node('CHIMERA', id = edge[1]), **edge_properties)
+        graph.create(edge)
+        numberOfEdges += 1
+
+    """    
+
+}
+
 workflow interactomeModeling_wf {
 
     take:
@@ -144,6 +194,8 @@ workflow interactomeModeling_wf {
     alignmentGraphsGML_ch = addAlignmentsToGraph( graphAndAlignments_ch)
 
     graphsEdgesAndNodesDF_ch = createNodeAndEdgesDataframes(alignmentGraphsGML_ch)
+
+    loadToDB(alignmentGraphsGML_ch)
 
     emit:
     graphsGML_ch = alignmentGraphsGML_ch

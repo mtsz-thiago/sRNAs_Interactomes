@@ -144,14 +144,8 @@ workflow {
         storeDir: "$params.output_dir/cds_alignments"
     )
 
-    interactomeGraphs_ch = graphModelingWF(expectedResults_ch, fullGenomeAlignments_ch)
-    interactomeGraphs_ch.graphsGML_ch.collectFile(
-        storeDir: "$params.output_dir/interactome_graphs"
-    )
-    interactomeGraphs_ch.graphsDF_ch.flatten().collectFile(
-        storeDir: "$params.output_dir/interactome_graphs"
-    )
-
+    graphModelingWF(expectedResults_ch, fullGenomeAlignments_ch)
+    
     // merge results
     keyFileGenomeAlignment_ch = fullGenomeAlignments_ch.map(it -> [getScenarioWordSizeKey(it), it])
     keyFileGenomeCDS_ch =  cds_alignments_ch.map(it -> [getScenarioWordSizeKey(it), it])

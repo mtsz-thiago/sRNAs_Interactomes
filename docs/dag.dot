@@ -159,132 +159,72 @@ v38 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
 v39 [shape=point];
 v38 -> v39;
 
-v40 [shape=point,label="",fixedsize=true,width=0.1,xlabel="Channel.of"];
-v41 [label="graphModelingWF:loadChimerasToDB"];
-v40 -> v41 [label="db_ch"];
-
 v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
-v41 [label="graphModelingWF:loadChimerasToDB"];
-v9 -> v41 [label="chimeras_ch"];
+v40 [label="graphModelingWF:loadChimerasToDB"];
+v9 -> v40 [label="chimeras_ch"];
 
-v41 [label="graphModelingWF:loadChimerasToDB"];
-v42 [shape=point];
-v41 -> v42;
-
-v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
-v43 [label="graphModelingWF:dataToChimeraGraph"];
-v9 -> v43 [label="chimeras_ch"];
-
-v43 [label="graphModelingWF:dataToChimeraGraph"];
-v44 [label="graphModelingWF:addFeaturesToGraph"];
-v43 -> v44 [label="outputFilename"];
-
-v44 [label="graphModelingWF:addFeaturesToGraph"];
-v45 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v44 -> v45 [label="outputFilename"];
-
-v45 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v47 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
-v45 -> v47 [label="keyValueGraphGML_ch"];
+v40 [label="graphModelingWF:loadChimerasToDB"];
+v41 [shape=point];
+v40 -> v41;
 
 v21 [label="blastWFFullGenome:filterHIghCovarageAlignments"];
+v42 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v21 -> v42 [label="alignments_ch"];
+
+v42 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v45 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
+v42 -> v45 [label="keyFileGenomeAlignment_ch"];
+
+v34 [label="blastWFCDS:filterHIghCovarageAlignments"];
+v43 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v34 -> v43 [label="cds_alignments_ch"];
+
+v43 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v45 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
+v43 -> v45 [label="keyFileGenomeCDS_ch"];
+
+v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v44 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v9 -> v44 [label="chimeras_ch"];
+
+v44 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v47 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v44 -> v47 [label="keyFileExpectedResults_ch"];
+
+v45 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
 v46 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v21 -> v46 [label="alignments_ch"];
+v45 -> v46;
 
 v46 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v47 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
-v46 -> v47 [label="keyValueAlignmests_ch"];
+v47 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
+v46 -> v47;
 
-v47 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
+v47 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
 v48 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
 v47 -> v48;
 
 v48 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v49 [label="graphModelingWF:addAlignmentsToGraph"];
-v48 -> v49 [label="graphAndAlignments_ch"];
+v49 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="count"];
+v48 -> v49 [label="filesToMerge"];
 
-v49 [label="graphModelingWF:addAlignmentsToGraph"];
-v50 [label="graphModelingWF:createNodeAndEdgesDataframes"];
-v49 -> v50 [label="outputFilename"];
+v49 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="count"];
+v50 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="view"];
+v49 -> v50;
 
-v50 [label="graphModelingWF:createNodeAndEdgesDataframes"];
-v53 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
-v50 -> v53;
+v50 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="view"];
+v51 [shape=point];
+v50 -> v51;
 
-v49 [label="graphModelingWF:addAlignmentsToGraph"];
-v51 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
-v49 -> v51;
+v48 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v52 [label="mergeResultsAndExpected"];
+v48 -> v52 [label="filesToMerge"];
 
-v51 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
-v52 [shape=point];
-v51 -> v52;
+v52 [label="mergeResultsAndExpected"];
+v53 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v52 -> v53;
 
-v53 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
-v54 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v53 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v54 [shape=point];
 v53 -> v54;
-
-v54 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
-v55 [shape=point];
-v54 -> v55;
-
-v21 [label="blastWFFullGenome:filterHIghCovarageAlignments"];
-v56 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v21 -> v56 [label="alignments_ch"];
-
-v56 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v59 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
-v56 -> v59 [label="keyFileGenomeAlignment_ch"];
-
-v34 [label="blastWFCDS:filterHIghCovarageAlignments"];
-v57 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v34 -> v57 [label="cds_alignments_ch"];
-
-v57 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v59 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
-v57 -> v59 [label="keyFileGenomeCDS_ch"];
-
-v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
-v58 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v9 -> v58 [label="chimeras_ch"];
-
-v58 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v61 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
-v58 -> v61 [label="keyFileExpectedResults_ch"];
-
-v59 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
-v60 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v59 -> v60;
-
-v60 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v61 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
-v60 -> v61;
-
-v61 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
-v62 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v61 -> v62;
-
-v62 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v63 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="count"];
-v62 -> v63 [label="filesToMerge"];
-
-v63 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="count"];
-v64 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="view"];
-v63 -> v64;
-
-v64 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="view"];
-v65 [shape=point];
-v64 -> v65;
-
-v62 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v66 [label="mergeResultsAndExpected"];
-v62 -> v66 [label="filesToMerge"];
-
-v66 [label="mergeResultsAndExpected"];
-v67 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
-v66 -> v67;
-
-v67 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
-v68 [shape=point];
-v67 -> v68;
 
 }

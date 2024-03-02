@@ -5,7 +5,10 @@ params.kmer_sz = 4
 params.neo4jURI = "bolt://neo4j:7687"
 params.neo4jUser = "neo4j"
 params.neo4jPassword = "Password"
+params.neo4jDB = "neo4j"
 
+chimerasNodesColumns = ['name','Strand','from','to','type','seq','query_id']
+chimerasEdgesColumns = ['ligation from','ligation to','Number of interactions','Odds Ratio','fishersPValue']
 
 def getKeyFromFilePath(filePath) {
     return filePath.getName()[0..3]
@@ -57,6 +60,79 @@ process addFeaturesToGraph {
 
     nx.write_gml(G_w_features, '${outputFilename}')
     """
+}
+
+process createNeo4jDB {
+
+    output:
+    val dbName
+
+    script:
+    """
+    #!/usr/bin/env python3
+
+    from neo4j import GraphDatabase
+
+    NEO4J_AUTH = ('${params.neo4jUser}','${params.neo4jPassword}')
+    driver = GraphDatabase.driver('${params.neo4jURI}', auth=NEO4J_AUTH)
+
+    with driver.session() as session:
+        session.run("CREATE DATABASE ${params.neo4jDB} IF NOT EXISTS")
+
+    dbName = '${params.neo4jDB}'
+    """
+}
+
+
+process loadChimerasToDB {
+
+    input:
+    path chimerasFile
+    val dbName
+
+    output:
+    tuple val(graphName), val(numberOfNodes), val(numberOfEdges)
+
+    script:
+    graphName = chimerasFile.baseName
+    numberOfNodes = 0
+    numberOfEdges = 0
+    """
+    #!/usr/bin/env python3
+
+    import pandas as pd
+    from graphdatascience import GraphDataScience
+
+    NEO4J_AUTH = ('${params.neo4jUser}','${params.neo4jPassword}')
+    gds = GraphDataScience('${params.neo4jURI}', auth=NEO4J_AUTH, database='${dbName}')
+
+    graphName = '${chimerasFile.baseName}'
+
+    chimeras_df = pd.read_csv('${chimerasFile}')
+    chimeras_df.rename(columns={"Fisher\'s exact test p-value": 'fishersPValue'}, inplace=True)
+    node_columns = '${chimerasNodesColumns.join(', ')}'.split(', ')
+    edge_columns = '${chimerasEdgesColumns.join(', ')}'.split(', ')
+    nodes_data = chimeras_df[node_columns]
+    edges_data = chimeras_df[edge_columns]
+
+    nodes = nodes_data.assign(
+        nodeId=nodes_data.index,
+        labels=lambda x: [["SEQUENCE", "CHIMERA"]] * len(nodes_data)
+    )
+
+    def find_pair(i, r, chimeras_df):
+        return chimeras_df.query(f"({r['chimera_idx']} == chimera_idx) and ({i} != index)").index[0]
+
+    targetNode = [find_pair(i, r, chimeras_df) for i,r in chimeras_df.iterrows() ]
+    edges = edges_data.assign(
+        sourceNode=edges_data.index,
+        targetNode=targetNode
+    )
+
+    relationships = edges_data.assign(sourceNodeId=edges.sourceNode, targetNodeId=edges.targetNode, relationshipType="LIGATES")
+    G = gds.graph.construct(graphName, nodes, relationships)
+    """
+
 }
 
 process addAlignmentsToGraph {
@@ -185,6 +261,13 @@ workflow interactomeModeling_wf {
     alignments_ch
 
     main:
+
+    // db_ch = createNeo4jDB()
+    db_ch = Channel.of(params.neo4jDB)
+    loadResults_ch = loadChimerasToDB(chimeras_ch, db_ch)
+
+
+
     graphs_gml_ch = dataToChimeraGraph(chimeras_ch) | addFeaturesToGraph
 
     keyValueGraphGML_ch = graphs_gml_ch.map(it -> [getKeyFromFilePath(it), it])
@@ -194,8 +277,6 @@ workflow interactomeModeling_wf {
     alignmentGraphsGML_ch = addAlignmentsToGraph( graphAndAlignments_ch)
 
     graphsEdgesAndNodesDF_ch = createNodeAndEdgesDataframes(alignmentGraphsGML_ch)
-
-    loadToDB(alignmentGraphsGML_ch)
 
     emit:
     graphsGML_ch = alignmentGraphsGML_ch

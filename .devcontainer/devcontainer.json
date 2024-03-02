@@ -27,7 +27,8 @@
 		"vscode": {
 			"extensions": [
 				"ms-toolsai.vscode-jupyter-slideshow",
-				"ms-toolsai.jupyter"
+				"ms-toolsai.jupyter",
+				"mechatroner.rainbow-csv"
 			]
 		}
 	}

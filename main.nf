@@ -61,7 +61,7 @@ process createFastaFilesFromSupData {
 
     output:
     path("files/queries/*"), emit: queries
-    path("files/expected/*"), emit: expected
+    path("files/expected/*"), emit: chimeras
 
     script:
     """
@@ -83,7 +83,7 @@ process extractGenomeDataFromZip {
     """
 }
 
-process mergeResultsAndExpected {
+process mergeChimerasAndAlignments {
 
     input:
     tuple val(scenarioAndWordSize), path('genome'), path('cds'), path('expected')
@@ -116,16 +116,16 @@ workflow {
     salmonellaCDS_ch = salmonellaDataset_ch.filter { it -> it.getName() == cdsFilename }
 
     // create fasta files from sup data
-    queriesAndExpected_ch  = createFastaFilesFromSupData(params.data_file)
-    queries_ch = queriesAndExpected_ch.queries.flatten()
-    expectedResults_ch = queriesAndExpected_ch.expected.flatten()
+    queriesAndChimeras_ch  = createFastaFilesFromSupData(params.data_file)
+    queries_ch = queriesAndChimeras_ch.queries.flatten()
+    chimeras_ch = queriesAndChimeras_ch.chimeras.flatten()
     
     queries_ch.collectFile(
         storeDir: "$params.output_dir/queries"
     )
 
-    expectedResults_ch.collectFile(
-        storeDir: "$params.output_dir/expected_alignments_results"
+    chimeras_ch.collectFile(
+        storeDir: "$params.output_dir/chimeras"
     )
 
     // run blast against full genome
@@ -144,23 +144,23 @@ workflow {
         storeDir: "$params.output_dir/cds_alignments"
     )
 
-    graphModelingWF(expectedResults_ch, fullGenomeAlignments_ch)
+    graphModelingWF(chimeras_ch, fullGenomeAlignments_ch)
     
     // merge results
     keyFileGenomeAlignment_ch = fullGenomeAlignments_ch.map(it -> [getScenarioWordSizeKey(it), it])
     keyFileGenomeCDS_ch =  cds_alignments_ch.map(it -> [getScenarioWordSizeKey(it), it])
     
-    keyFileExpectedResults_ch = expectedResults_ch.map(it -> [getScenarionFromFilename(it.getName()), it])
+    keyFileChimeras_ch = chimeras_ch.map(it -> [getScenarionFromFilename(it.getName()), it])
 
     filesToMerge = keyFileGenomeAlignment_ch
                         .join(keyFileGenomeCDS_ch)
                         .map(it -> [getScenarionFromFilename(it[0]), it[0], it[1], it[2]])
-                        .combine(keyFileExpectedResults_ch, by:0)
+                        .combine(keyFileChimeras_ch, by:0)
                         .map(it -> [it[1],it[2],it[3],it[4]] )
 
     filesToMerge.count().view(it -> "Merging ${it} files")
     // filesToMerge.view()
-    mergedResults_ch = mergeResultsAndExpected(filesToMerge)
+    mergedResults_ch = mergeChimerasAndAlignments(filesToMerge)
     mergedResults_ch.collectFile(
         storeDir: "$params.output_dir"
     )

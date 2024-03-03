@@ -66,7 +66,7 @@ process loadChimerasToDB {
         # Load edges
         for index, row in edges.iterrows():
             session.run(
-                "MATCH (a:SEQUENCE:CHIMERA {nodeId: \$sourceNode}), (b:SEQUENCE:CHIMERA {nodeId: \$targetNode}) "
+                "MATCH (a:SEQUENCE:CHIMERA:${graphName} {nodeId: \$sourceNode}), (b:SEQUENCE:CHIMERA:${graphName} {nodeId: \$targetNode}) "
                 "CREATE (a)-[r:LIGATES {Number_of_interactions: \$Number_of_interactions, Odds_Ratio: \$Odds_Ratio, fishersPValue: \$fishersPValue}]->(b)",
                 sourceNode=row['sourceNode'], targetNode=row['targetNode'], Number_of_interactions=row['Number of interactions'], Odds_Ratio=row['Odds Ratio'], fishersPValue=row['fishersPValue']
             )

@@ -8,7 +8,7 @@ params.neo4jPassword = "Password"
 params.neo4jDB = "neo4j"
 
 chimerasNodesColumns = ['name','Strand','from','to','type','seq','query_id']
-chimerasEdgesColumns = ['ligation from','ligation to','Number of interactions','Odds Ratio','fishersPValue']
+chimerasEdgesColumns = ['ligation from','ligation to','Number of interactions','Odds Ratio','fishersPValue', 'chimera_idx']
 
 alignmentsNodesColumns = ['sseqid', 'sgi', 'sacc', 'saccver', 'slen', 'sseq', 'staxids', 'sscinames', 'scomnames', 'sblastnames', 'sskingdoms', 'stitle', 'sstrand']
 alignmentsEdgesColumns = ['qseqid', 'qstart', 'qend', 'sstart', 'send', 'qseq', 'evalue', 'bitscore', 'score', 'length', 'pident', 'nident', 'mismatch', 'positive', 'gapopen', 'gaps', 'ppos', 'qframe', 'sframe', 'btop', 'qcovs', 'qcovhsp']
@@ -42,16 +42,16 @@ process loadChimerasToDB {
     edges_data = chimeras_df[edge_columns]
 
     nodes = nodes_data.assign(
-        nodeId=nodes_data.index,
+        nodeId=chimeras_df.query_id,
         labels=lambda x: [["SEQUENCE", "CHIMERA", "${graphName}"]] * len(nodes_data)
     )
 
     def find_pair(i, r, chimeras_df):
-        return chimeras_df.query(f"({r['chimera_idx']} == chimera_idx) and ({i} != index)").index[0]
+        return chimeras_df.query(f"({r['chimera_idx']} == chimera_idx) and ({r['query_id']} != query_id)").query_id.iloc[0]
 
     targetNode = [find_pair(i, r, chimeras_df) for i,r in chimeras_df.iterrows() ]
     edges = edges_data.assign(
-        sourceNode=edges_data.index,
+        sourceNode=chimeras_df.query_id,
         targetNode=targetNode
     )
     
@@ -67,8 +67,8 @@ process loadChimerasToDB {
         for index, row in edges.iterrows():
             session.run(
                 "MATCH (a:SEQUENCE:CHIMERA:${graphName} {nodeId: \$sourceNode}), (b:SEQUENCE:CHIMERA:${graphName} {nodeId: \$targetNode}) "
-                "CREATE (a)-[r:LIGATES {Number_of_interactions: \$Number_of_interactions, Odds_Ratio: \$Odds_Ratio, fishersPValue: \$fishersPValue}]->(b)",
-                sourceNode=row['sourceNode'], targetNode=row['targetNode'], Number_of_interactions=row['Number of interactions'], Odds_Ratio=row['Odds Ratio'], fishersPValue=row['fishersPValue']
+                "CREATE (a)-[r:LIGATES {Number_of_interactions: \$Number_of_interactions, Odds_Ratio: \$Odds_Ratio, fishersPValue: \$fishersPValue,chimera_idx: \$chimera_idx}]->(b)",
+                sourceNode=row['sourceNode'], targetNode=row['targetNode'], Number_of_interactions=row['Number of interactions'], Odds_Ratio=row['Odds Ratio'], fishersPValue=row['fishersPValue'], chimera_idx=row['chimera_idx']
             )
     """
 

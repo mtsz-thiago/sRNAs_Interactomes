@@ -53,21 +53,87 @@ process downloadSalmonellaDataset {
 
 }
 
-process createFastaFilesFromSupData {
-    // publishDir params.cache_dir, mode: 'copy'
+process flattenDataFile {
 
     input:
-    path data_file
+    path dataFile
 
     output:
-    path("files/queries/*"), emit: queries
-    path("files/expected/*"), emit: chimeras
+    path "*.csv"
 
     script:
     """
-    python3 $projectDir/src/sup_data_to_fasta.py -i ${data_file} -o files
-    """
+    #!/usr/bin/env python
 
+    import pandas as pd
+ 
+    def flatten_df(df):
+        
+        dfRNA1 = df[[c for c in df.columns if 'RNA2' not in c]]
+        rna1columnsMap = {c:c.strip('RNA1').strip() for c in dfRNA1.columns if 'RNA1' in c}
+        dfRNA1 = dfRNA1.rename(columns=rna1columnsMap)
+        dfRNA1['origin'] = 'RNA1'
+        dfRNA1['chimera_idx'] = dfRNA1.index
+        
+        dfRNA2 = df[[c for c in df.columns if 'RNA1' not in c]]
+        rna2columnsMap = {c:c.strip('RNA2').strip() for c in dfRNA2.columns if 'RNA2' in c}
+        dfRNA2 = dfRNA2.rename(columns=rna2columnsMap)
+        dfRNA2['origin'] = 'RNA2'
+        dfRNA2['chimera_idx'] = dfRNA2.index
+        
+        flattened_df = pd.concat([dfRNA1, dfRNA2], ignore_index=True)
+        
+        w_query_id = flattened_df.assign(
+            query_id = pd.factorize(flattened_df['seq'])[0]
+        )
+
+        return w_query_id
+        
+    sup_dict = pd.read_excel('${dataFile}', sheet_name=None)
+    sup_dict = {k.replace('+', '_'): v for k, v in sup_dict.items() if k != 'Legend'}
+
+    for k, raw in sup_dict.items():
+        df = flatten_df(raw)
+        df.to_csv(k + '.csv', index=False)
+
+    """
+}
+
+process extractAlignmentQueries {
+    input:
+    path chimerasFile
+
+    output:
+    path outputFilename
+
+    script:
+    outputFilename = chimerasFile.baseName.replace(".csv", ".fasta")
+    """
+    #!/usr/bin/python3
+    import pandas as pd
+    from Bio import SeqIO
+    from Bio.Seq import Seq
+    from Bio.SeqRecord import SeqRecord
+
+    def map_to_fasta(df):
+        return df.groupby('query_id').apply(map_record_to_SeqRecord).reset_index(drop=True)
+
+    def map_record_to_SeqRecord(r):
+        id = f"{r.name}"
+        name = ''
+        seq = Seq(r.iloc[0].seq)
+        description = f"{id} from {r.chimera_idx.values}"
+        return SeqRecord(
+            id=id,
+            description=description,
+            name=name, 
+            seq=seq)
+
+    df = pd.read_csv('${chimerasFile}')
+    fasta_df = map_to_fasta(df)
+    SeqIO.write(fasta_df, '${outputFilename}', "fasta")
+
+    """
 }
 
 process extractGenomeDataFromZip {
@@ -116,16 +182,15 @@ workflow {
     salmonellaCDS_ch = salmonellaDataset_ch.filter { it -> it.getName() == cdsFilename }
 
     // create fasta files from sup data
-    queriesAndChimeras_ch  = createFastaFilesFromSupData(params.data_file)
-    queries_ch = queriesAndChimeras_ch.queries.flatten()
-    chimeras_ch = queriesAndChimeras_ch.chimeras.flatten()
-    
-    queries_ch.collectFile(
-        storeDir: "$params.output_dir/queries"
-    )
-
+    rawData_ch = channel.of(params.data_file)
+    chimeras_ch  = flattenDataFile(rawData_ch).flatten()
     chimeras_ch.collectFile(
         storeDir: "$params.output_dir/chimeras"
+    )
+
+    queries_ch = extractAlignmentQueries(chimeras_ch)
+    queries_ch.collectFile(
+        storeDir: "$params.output_dir/queries"
     )
 
     // run blast against full genome
@@ -162,7 +227,7 @@ workflow {
     // filesToMerge.view()
     mergedResults_ch = mergeChimerasAndAlignments(filesToMerge)
     mergedResults_ch.collectFile(
-        storeDir: "$params.output_dir"
+        storeDir: "$params.output_dir/alignments_results"
     )
 }
 

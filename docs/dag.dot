@@ -27,29 +27,29 @@ v5 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="filter"];
 v28 [label="blastWFCDS:indexSubjectSequences"];
 v5 -> v28 [label="subjectGenomes_ch"];
 
-v6 [shape=point,label="",fixedsize=true,width=0.1];
-v7 [label="createFastaFilesFromSupData"];
-v6 -> v7 [label="data_file"];
+v6 [shape=point,label="",fixedsize=true,width=0.1,xlabel="Channel.of"];
+v7 [label="flattenDataFile"];
+v6 -> v7 [label="rawData_ch"];
 
-v7 [label="createFastaFilesFromSupData"];
+v7 [label="flattenDataFile"];
 v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
 v7 -> v8;
 
-v7 [label="createFastaFilesFromSupData"];
-v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
-v7 -> v9;
+v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v8 -> v9 [label="chimeras_ch"];
+
+v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
+v10 [shape=point];
+v9 -> v10;
 
 v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
-v10 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
-v8 -> v10 [label="queries_ch"];
+v11 [label="extractAlignmentQueries"];
+v8 -> v11 [label="chimeras_ch"];
 
-v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v11 [label="extractAlignmentQueries"];
 v12 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
-v9 -> v12 [label="chimeras_ch"];
-
-v10 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
-v11 [shape=point];
-v10 -> v11;
+v11 -> v12 [label="queries_ch"];
 
 v12 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
 v13 [shape=point];
@@ -63,9 +63,9 @@ v15 [label="blastWFFullGenome:indexSubjectSequences"];
 v17 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
 v15 -> v17;
 
-v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v11 [label="extractAlignmentQueries"];
 v16 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="splitFasta"];
-v8 -> v16 [label="queries_ch"];
+v11 -> v16 [label="queries_ch"];
 
 v16 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="splitFasta"];
 v17 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
@@ -115,9 +115,9 @@ v28 [label="blastWFCDS:indexSubjectSequences"];
 v30 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
 v28 -> v30;
 
-v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v11 [label="extractAlignmentQueries"];
 v29 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="splitFasta"];
-v8 -> v29 [label="queries_ch"];
+v11 -> v29 [label="queries_ch"];
 
 v29 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="splitFasta"];
 v30 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];
@@ -159,9 +159,9 @@ v38 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="collectFile"];
 v39 [shape=point];
 v38 -> v39;
 
-v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
 v40 [label="graphModelingWF:loadChimerasToDB"];
-v9 -> v40 [label="chimeras_ch"];
+v8 -> v40 [label="chimeras_ch"];
 
 v40 [label="graphModelingWF:loadChimerasToDB"];
 v42 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
@@ -199,9 +199,9 @@ v46 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
 v48 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="join"];
 v46 -> v48 [label="keyFileGenomeCDS_ch"];
 
-v9 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
+v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="flatten"];
 v47 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
-v9 -> v47 [label="chimeras_ch"];
+v8 -> v47 [label="chimeras_ch"];
 
 v47 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
 v50 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="combine"];

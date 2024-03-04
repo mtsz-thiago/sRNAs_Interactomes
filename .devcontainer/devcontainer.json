@@ -28,7 +28,9 @@
 			"extensions": [
 				"ms-toolsai.vscode-jupyter-slideshow",
 				"ms-toolsai.jupyter",
-				"mechatroner.rainbow-csv"
+				"mechatroner.rainbow-csv",
+				"mhutchie.git-graph",
+				"donjayamanne.githistory"
 			]
 		}
 	}

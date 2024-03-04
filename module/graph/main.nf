@@ -54,20 +54,23 @@ process loadChimerasToDB {
         sourceNode=chimeras_df.query_id,
         targetNode=targetNode
     )
-    
+
     with driver.session() as session:
         # Load nodes
         for index, row in nodes.iterrows():
             session.run(
-                "CREATE (n:SEQUENCE:CHIMERA:${graphName} {nodeId: \$nodeId, name: \$name, Strand: \$Strand, from: \$from, to: \$to, type: \$type, seq: \$seq, query_id: \$query_id})",
+                "MERGE (n:SEQUENCE:CHIMERA:${graphName} {nodeId: \$nodeId}) "
+                "SET n += {name: \$name, Strand: \$Strand, from: \$from, to: \$to, type: \$type, seq: \$seq, query_id: \$query_id}",
                 **row
             )
 
-        # Load edges
+    # Load edges
+    with driver.session() as session:
         for index, row in edges.iterrows():
             session.run(
                 "MATCH (a:SEQUENCE:CHIMERA:${graphName} {nodeId: \$sourceNode}), (b:SEQUENCE:CHIMERA:${graphName} {nodeId: \$targetNode}) "
-                "CREATE (a)-[r:LIGATES {Number_of_interactions: \$Number_of_interactions, Odds_Ratio: \$Odds_Ratio, fishersPValue: \$fishersPValue,chimera_idx: \$chimera_idx}]->(b)",
+                "MERGE (a)-[r:LIGATES {Number_of_interactions: \$Number_of_interactions, Odds_Ratio: \$Odds_Ratio, fishersPValue: \$fishersPValue,chimera_idx: \$chimera_idx}]->(b) "
+                "MERGE (b)-[r2:LIGATES {Number_of_interactions: \$Number_of_interactions, Odds_Ratio: \$Odds_Ratio, fishersPValue: \$fishersPValue,chimera_idx: \$chimera_idx}]->(a)",
                 sourceNode=row['sourceNode'], targetNode=row['targetNode'], Number_of_interactions=row['Number of interactions'], Odds_Ratio=row['Odds Ratio'], fishersPValue=row['fishersPValue'], chimera_idx=row['chimera_idx']
             )
     """
@@ -127,7 +130,6 @@ process loadAlignmentsToDB {
                 "CREATE (a)-[r:ALIGNS {qseqid: \$qseqid, qstart: \$qstart, qend: \$qend, sstart: \$sstart, send: \$send, qseq: \$qseq, evalue: \$evalue, bitscore: \$bitscore, score: \$score, length: \$length, pident: \$pident, nident: \$nident, mismatch: \$mismatch, positive: \$positive, gapopen: \$gapopen, gaps: \$gaps, ppos: \$ppos, qframe: \$qframe, sframe: \$sframe, btop: \$btop, qcovs: \$qcovs, qcovhsp: \$qcovhsp}]->(b)",
                 **row
             )
-
     """
 }
 

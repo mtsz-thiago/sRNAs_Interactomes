@@ -29,6 +29,21 @@ The following command should run the pipeline
 nextflow run -resume main.nf -with-report output/report.html -with-timeline output/timeline.html -with-dag docs/dag.png
 ```
 
+## Workflow
+
+<div class="center">
+   <img src="./docs/dag.png" style="text-align: center; width: 70%; border: 1px;margin: auto"/>
+</dib>
+
+The workflow implemented on [main.nf](./main.nf) will:
+
+- transform the suplementary data so to get a tabular representation of unique sRNA sequences that formed the chumeras and than:
+   - For each of those sequences align it agains [Salmonella enterica subsp. enterica serovar Typhimurium str. SL1344](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000210855.2/).
+   - The aligned sequences and the original chimera ones will be loaded to a [Neo4J DB][http://localhost:7474]
+
+> the databse credentials are user=neo4j and password=Password
+
+
 ### Input Data
 
 This pipeline processes the [supplementary data 5](https://www.nature.com/articles/s41467-023-43632-1#additional-information) which contains some interactions between sRNA and mRNA as described on source. The first spreadsheet in [data file](./data/Liu_sup5_data.xlsx) - committed in this repo for convenience -  contains metadata, all other datasets corresponding to experiments as described in the paper.
@@ -55,19 +70,7 @@ This pipeline processes the [supplementary data 5](https://www.nature.com/articl
 | RNA1 seq                       | RNA1 start was taken from the coordinate termed "RNA1 from" and RNA1 end was taken the coordinate termed "RNA1 ligation to". If "RNA1 ligation to" was not identified, RNA1 end was taken 20 nucleotides downstream the coordinate termed "RNA1 to" |
 | RNA2 seq                       | RNA2 start was taken the coordinate termed "RNA2 ligation from" and the end was taken at coordinate of "RNA2 to". If "RNA2 ligation from" was not identified, RNA2 start was taken 20 nucleotides upstream the coordinate termed "RNA2 from" |
 
-## Workflow
-
-<div class="center">
-   <img src="./docs/dag.png" style="text-align: center; width: 70%; border: 1px;margin: auto"/>
-</dib>
-
-The workflow implemented on [main.nf](./main.nf) will:
-
-- transform the suplementary data so to get a tabular representation of unique sRNA sequences that formed the chumeras and than:
-   - For each of those sequences align it agains [Salmonella enterica subsp. enterica serovar Typhimurium str. SL1344](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000210855.2/).
-   - The aligned sequences and the original chimera ones will be loaded to a [Neo4J DB][http://localhost:7474]
-
-> the databse credentials are user=neo4j and password=Password
+### Input Parameters
 
 | Input Parameter                  | Description                                                                                                                                                                                                                                                                                                                                 | Default Value                                                                 |
 |----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|

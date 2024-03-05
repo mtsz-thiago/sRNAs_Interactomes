@@ -39,7 +39,7 @@ The workflow implemented on [main.nf](./main.nf) will:
 
 - transform the suplementary data so to get a tabular representation of unique sRNA sequences that formed the chumeras and than:
    - For each of those sequences align it agains [Salmonella enterica subsp. enterica serovar Typhimurium str. SL1344](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000210855.2/).
-   - The aligned sequences and the original chimera ones will be loaded to a [Neo4J DB][http://localhost:7474]
+   - The aligned sequences and the original chimera ones will be loaded to a [Neo4J DB](http://localhost:7474)
 
 > the databse credentials are user=neo4j and password=Password
 

@@ -16,7 +16,6 @@ params.blastHSQSLimit = 50
 params.minAlignmentCoverageThreshold = 0.9
 params.minPidentThreshold = 0.9
 // GRAPH PARAMS
-params.kmer_sz = 4
 params.neo4jURI = "bolt://neo4j:7687"
 params.neo4jUser = "neo4j"
 params.neo4jPassword = "Password"
@@ -41,10 +40,9 @@ include { blast_wf as blastWFCDS } from "./module/blast" params(
 )
 
 include { interactomeModeling_wf as graphModelingWF } from "./module/graph" params(
-    kmer_sz: params.kmer_sz
-    neo4jURI: params.neo4jURI
-    neo4jUser: params.neo4jUser
-    neo4jPassword: params.neo4jPassword
+    neo4jURI: params.neo4jURI,
+    neo4jUser: params.neo4jUser,
+    neo4jPassword: params.neo4jPassword,
     neo4jDB: params.neo4jDB
     )
 

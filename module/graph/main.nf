@@ -125,6 +125,12 @@ process loadAlignmentsToDB {
     )
 
     with driver.session() as session:
+        # clean up
+        session.run(
+            "MATCH (N:ALIGNMENT) WHERE N.graphName = '${graphName}' DETACH DELETE N"
+        )
+
+    with driver.session() as session:
         # Load nodes
         for index, row in nodes.iterrows():
             session.run(

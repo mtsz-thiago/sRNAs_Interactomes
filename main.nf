@@ -212,7 +212,7 @@ workflow {
     )
 
     queries_ch = extractAlignmentQueries(chimeras_ch)
-    queries_ch.view(it -> "${it} : queries ${it.countFasta()}")
+    queries_ch.view(it -> "${it.baseName} : queries ${it.countFasta()}")
     queries_ch.collectFile(
         storeDir: "$params.output_dir/queries"
     )
@@ -220,7 +220,7 @@ workflow {
     // run blast against full genome
     blastFullGenomeResults_ch = blastWFFullGenome(queries_ch, salmonellaGenome_ch)
     fullGenomeAlignments_ch = blastFullGenomeResults_ch.aligmentsResults_ch
-    fullGenomeAlignments_ch.view(it -> "${it}: full genome alginments ${it.countLines()}")
+    fullGenomeAlignments_ch.view(it -> "${it.baseName}: full genome alginments ${it.countLines()}")
     fullGenomeAlignments_ch.collectFile(
         storeDir: "$params.output_dir/full_genome_alignments"
     )
@@ -228,7 +228,7 @@ workflow {
     // run blast against cds
     blastResultsCDS_ch = blastWFCDS(queries_ch, salmonellaCDS_ch)
     cds_alignments_ch = blastResultsCDS_ch.aligmentsResults_ch
-    cds_alignments_ch..view(it -> "${it}: CDS alginments ${it.countLines()}")
+    cds_alignments_ch.view(it -> "${it.baseName}: CDS alginments ${it.countLines()}")
     cds_alignments_ch.collectFile(
         storeDir: "$params.output_dir/cds_alignments"
     )

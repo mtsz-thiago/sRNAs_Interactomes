@@ -1,23 +1,52 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+// GLOBAL PARAMS
+genomeFilename = "GCF_000210855.2_ASM21085v2_genomic.fna"
+cdsFilename = "cds_from_genomic.fna"
 params.output_dir = "$baseDir/output"
 params.data_file = "$baseDir/data/Liu_sup5_data.xlsx"
 params.cache_dir = "$baseDir/data"
-params.queries_files_chunk_sizes = 20
-
 params.salmonella_id = "GCF_000210855.2"
+// BLAST PARAMS
+params.queriesChunckSize = 10
+params.wordSizes_list = [11]
+params.blastCullingLimit = 2
+params.blastHSQSLimit = 50
+params.minAlignmentCoverageThreshold = 0.9
+params.minPidentThreshold = 0.9
+// GRAPH PARAMS
+params.kmer_sz = 4
+params.neo4jURI = "bolt://neo4j:7687"
+params.neo4jUser = "neo4j"
+params.neo4jPassword = "Password"
+params.neo4jDB = "neo4j"
 
-genomeFilename = "GCF_000210855.2_ASM21085v2_genomic.fna"
-cdsFilename = "cds_from_genomic.fna"
-params.blast_word_sizes = "11"
+include { blast_wf as blastWFFullGenome } from "./module/blast" params(
+    queriesChunckSize: params.queriesChunckSize,
+    wordSizes_list: params.wordSizes_list,
+    blastCullingLimit: params.blastCullingLimit,
+    blastHSQSLimit: params.blastHSQSLimit,
+    minAlignmentCoverageThreshold: params.minAlignmentCoverageThreshold,
+    minPidentThreshold: params.minPidentThreshold
+)
 
-include { blast_wf as blastWFFullGenome } from "./module/blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
-                                                    wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
-include { blast_wf as blastWFCDS } from "./module/blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
-                                                    wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
+include { blast_wf as blastWFCDS } from "./module/blast" params(
+    queriesChunckSize: params.queriesChunckSize,
+    wordSizes_list: params.wordSizes_list,
+    blastCullingLimit: params.blastCullingLimit,
+    blastHSQSLimit: params.blastHSQSLimit,
+    minAlignmentCoverageThreshold: params.minAlignmentCoverageThreshold,
+    minPidentThreshold: params.minPidentThreshold
+)
 
-include { interactomeModeling_wf as graphModelingWF } from "./module/graph" params(kmer_sz: 4)
+include { interactomeModeling_wf as graphModelingWF } from "./module/graph" params(
+    kmer_sz: params.kmer_sz
+    neo4jURI: params.neo4jURI
+    neo4jUser: params.neo4jUser
+    neo4jPassword: params.neo4jPassword
+    neo4jDB: params.neo4jDB
+    )
 
 def getScenarioWordSizeKey(queryFilePath) {
     return queryFilePath.getName().split("\\.")[0]
@@ -30,10 +59,6 @@ def getScenarionFromFilename(filename) {
     } else {
         return null
     }
-}
-
-def getWordSizesFromStringParam(word_sizes_str) {
-    return ((String)word_sizes_str).split(',').collect {it as Integer}
 }
 
 process downloadSalmonellaDataset {

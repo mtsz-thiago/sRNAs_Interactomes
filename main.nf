@@ -219,7 +219,7 @@ workflow {
     // run blast against full genome
     blastFullGenomeResults_ch = blastWFFullGenome(queries_ch, salmonellaGenome_ch)
     fullGenomeAlignments_ch = blastFullGenomeResults_ch.aligmentsResults_ch
-    fullGenomeAlignments_ch.countLines().view(it -> "Number genomic alginments ${it}")
+    fullGenomeAlignments_ch.view(it -> "${it}: full genome alginments ${it.countLines()}")
     fullGenomeAlignments_ch.collectFile(
         storeDir: "$params.output_dir/full_genome_alignments"
     )
@@ -227,7 +227,7 @@ workflow {
     // run blast against cds
     blastResultsCDS_ch = blastWFCDS(queries_ch, salmonellaCDS_ch)
     cds_alignments_ch = blastResultsCDS_ch.aligmentsResults_ch
-    cds_alignments_ch.countLines().view(it -> "Number CDS alginments ${it}")
+    cds_alignments_ch..view(it -> "${it}: CDS alginments ${it.countLines()}")
     cds_alignments_ch.collectFile(
         storeDir: "$params.output_dir/cds_alignments"
     )
@@ -246,7 +246,6 @@ workflow {
                         .combine(keyFileChimeras_ch, by:0)
                         .map(it -> [it[1],it[2],it[3],it[4]] )
 
-    filesToMerge.count().view(it -> "Merging ${it} files")
     // filesToMerge.view()
     mergedResults_ch = mergeChimerasAndAlignments(filesToMerge)
     mergedResults_ch.collectFile(

@@ -212,6 +212,7 @@ workflow {
     )
 
     queries_ch = extractAlignmentQueries(chimeras_ch)
+    queries_ch.view(it -> "${it} : queries ${it.countFasta()}")
     queries_ch.collectFile(
         storeDir: "$params.output_dir/queries"
     )

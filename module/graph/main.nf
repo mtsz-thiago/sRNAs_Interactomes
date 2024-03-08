@@ -6,16 +6,101 @@ params.neo4jUser = "neo4j"
 params.neo4jPassword = "Password"
 params.neo4jDB = "neo4j"
 
-chimerasNodesColumns = ['name','Strand','from','to','type','seq','query_id', 'origin']
+originNodeColumns = ['origin_name','type']
+originEdgeColumns = ['from','to', 'Strand']
+
+chimerasNodesColumns = ['name','Strand','seq','query_id', 'chimera_origin']
 chimerasEdgesColumns = ['ligation from','ligation to','Number of interactions','Odds Ratio','fishersPValue', 'chimera_idx']
 
 alignmentsNodesColumns = ['sseqid', 'sgi', 'sacc', 'saccver', 'slen', 'sseq', 'staxids', 'sscinames', 'scomnames', 'sblastnames', 'sskingdoms', 'stitle', 'sstrand']
 alignmentsEdgesColumns = ['qseqid', 'qstart', 'qend', 'sstart', 'send', 'qseq', 'evalue', 'bitscore', 'score', 'length', 'pident', 'nident', 'mismatch', 'positive', 'gapopen', 'gaps', 'ppos', 'qframe', 'sframe', 'btop', 'qcovs', 'qcovhsp']
 
-process loadChimerasToDB {
+process extractRNAOriginFromChimeras {
 
     input:
     path chimerasFile
+
+    output:
+    path chimerasAndOriginFile
+
+    script:
+    chimerasAndOriginFile = "${chimerasFile.baseName}-withOrigin.csv"
+    """
+    #!/usr/bin/env python3
+
+    import pandas as pd
+    import re
+
+    def get_origin(name, type):
+        if type == 'CDS':
+            return re.search(r'^(.*)\\(', name).group(1)
+        elif type == 'Antisense':
+            return re.search(r'^(.*)\\(', name).group(1)
+        elif type == '5UTR':
+            return re.search(r'^(.*)\\(', name).group(1)
+        elif type == '3UTR':
+            return re.search(r'^(.*)\\(', name).group(1)
+        elif 'RNA' in type:
+            return re.search(r'^(.*)\\(', name).group(1)
+        elif type == 'IGR':
+            matches = re.search(r'(.*)\\(.*\\.(.*)\\(', name)
+            return matches.group(1) +':'+ matches.group(2)
+        else:
+            raise ValueError('Invalid type')
+
+    chimeras_df = pd.read_csv('${chimerasFile}')
+    chimeras_df['origin_name'] = chimeras_df[['name', 'type']].apply(lambda x: get_origin(**x), axis=1)
+    chimeras_df.to_csv('${chimerasAndOriginFile}', index=False)
+    """
+}
+
+process loadOriginsToDB {
+    input:
+    path originsFile
+
+    output:
+    val 'True'
+
+    script:
+    """
+    #!/usr/bin/env python3
+
+    import pandas as pd
+    from neo4j import GraphDatabase
+
+    NEO4J_AUTH = ('${params.neo4jUser}','${params.neo4jPassword}')
+    driver = GraphDatabase.driver('${params.neo4jURI}', auth=NEO4J_AUTH, database='${params.neo4jDB}')
+    
+    origins_df = pd.read_csv('${originsFile}')
+    node_columns = '${originNodeColumns.join(', ')}'.split(', ')
+
+    nodes_data = origins_df[node_columns]
+
+    nodes = nodes_data.assign(
+        nodeId=pd.factorize(nodes_data['origin_name'])[0],
+        labels=lambda x: [["ORIGIN"]] * len(nodes_data),
+    )
+
+    with driver.session() as session:
+        # clean up
+        session.run(
+            "MATCH (N:LOCUS) DETACH DELETE N"
+        )
+
+        for index, row in nodes.iterrows():
+            session.run(
+                "MERGE (n:LOCUS {nodeId: \$nodeId}) "
+                "SET n += {name: \$origin_name, type: \$type}",
+                **row
+            )
+
+    """
+}
+
+process loadChimerasToDB {
+
+    input:
+    tuple path(chimerasFile), val(ready)
 
     output:
     val graphName
@@ -37,8 +122,10 @@ process loadChimerasToDB {
     chimeras_df.rename(columns={"Fisher\'s exact test p-value": 'fishersPValue'}, inplace=True)
     node_columns = '${chimerasNodesColumns.join(', ')}'.split(', ')
     edge_columns = '${chimerasEdgesColumns.join(', ')}'.split(', ')
+    origins_edges_columns = '${originEdgeColumns.join(', ')}'.split(', ')
     nodes_data = chimeras_df[node_columns]
     edges_data = chimeras_df[edge_columns]
+    
 
     nodes = nodes_data.assign(
         nodeId=chimeras_df.query_id,
@@ -56,6 +143,12 @@ process loadChimerasToDB {
         graphName="${graphName}"
     )
 
+    origins_edges = chimeras_df[origins_edges_columns].assign(
+        graphName="${graphName}",
+        queryId=chimeras_df.query_id,
+        origin_name=chimeras_df.origin_name
+    )
+
     with driver.session() as session:
         # clean up
         session.run(
@@ -67,7 +160,7 @@ process loadChimerasToDB {
         for index, row in nodes.iterrows():
             session.run(
                 "MERGE (n:CHIMERA {nodeId: \$nodeId, graphName: \$graphName}) "
-                "SET n += {name: \$name, Strand: \$Strand, from: \$from, to: \$to, type: \$type, seq: \$seq, query_id: \$query_id, origin: \$origin, graphName: \$graphName}",
+                "SET n += {name: \$name, Strand: \$Strand, seq: \$seq, query_id: \$query_id, origin: \$chimera_origin, graphName: \$graphName}",
                 **row
             )
 
@@ -76,9 +169,18 @@ process loadChimerasToDB {
         for index, row in edges.iterrows():
             session.run(
                 "MATCH (a:CHIMERA {nodeId: \$sourceNode, graphName: \$graphName}), (b:CHIMERA {nodeId: \$targetNode, graphName: \$graphName}) "
-                "MERGE (a)-[r:LIGATES {Number_of_interactions: \$Number_of_interactions, Odds_Ratio: \$Odds_Ratio, fishersPValue: \$fishersPValue,chimera_idx: \$chimera_idx}]->(b) "
-                "MERGE (b)-[r2:LIGATES {Number_of_interactions: \$Number_of_interactions, Odds_Ratio: \$Odds_Ratio, fishersPValue: \$fishersPValue,chimera_idx: \$chimera_idx}]->(a)",
+                "MERGE (a)-[r:LIGATES_TO {Number_of_interactions: \$Number_of_interactions, Odds_Ratio: \$Odds_Ratio, fishersPValue: \$fishersPValue,chimera_idx: \$chimera_idx}]->(b) "
+                "MERGE (b)-[r2:LIGATES_TO {Number_of_interactions: \$Number_of_interactions, Odds_Ratio: \$Odds_Ratio, fishersPValue: \$fishersPValue,chimera_idx: \$chimera_idx}]->(a)",
                 sourceNode=row['sourceNode'], targetNode=row['targetNode'], Number_of_interactions=row['Number of interactions'], Odds_Ratio=row['Odds Ratio'], fishersPValue=row['fishersPValue'], chimera_idx=row['chimera_idx'], graphName=row['graphName']
+            )
+
+    #Load origins relashionships
+    with driver.session() as session:
+        for index, row in origins_edges.iterrows():
+            session.run(
+                "MATCH (a:CHIMERA {nodeId: \$queryId, graphName: \$graphName}), (b:LOCUS {name: \$origin_name}) "
+                "MERGE (a)-[r:ORIGINATES_FROM {Strand: \$Strand, from: \$from, to: \$to}]->(b)",
+                **row
             )
     """
 
@@ -115,7 +217,8 @@ process loadAlignmentsToDB {
     nodes = nodes_data.assign(
         nodeId=nodes_data.index,
         labels=lambda x: [["ALIGNMENT"]] * len(nodes_data),
-        graphName="${graphName}"
+        graphName="${graphName}",
+        name = alignments_df[['sstart', 'send']].apply(lambda x: f"SL1344({x[0]}:{x[1]})", axis=1)
     )
 
     edges = edges_data.assign(
@@ -134,7 +237,7 @@ process loadAlignmentsToDB {
         # Load nodes
         for index, row in nodes.iterrows():
             session.run(
-                "CREATE (n:ALIGNMENT {nodeId: \$nodeId, sseqid: \$sseqid, sgi: \$sgi, sacc: \$sacc, saccver: \$saccver, slen: \$slen, sseq: \$sseq, staxids: \$staxids, sscinames: \$sscinames, scomnames: \$scomnames, sblastnames: \$sblastnames, sskingdoms: \$sskingdoms, stitle: \$stitle, sstrand: \$sstrand, graphName: \$graphName})",
+                "CREATE (n:ALIGNMENT {name: \$name, nodeId: \$nodeId, sseqid: \$sseqid, sgi: \$sgi, sacc: \$sacc, saccver: \$saccver, slen: \$slen, sseq: \$sseq, staxids: \$staxids, sscinames: \$sscinames, scomnames: \$scomnames, sblastnames: \$sblastnames, sskingdoms: \$sskingdoms, stitle: \$stitle, sstrand: \$sstrand, graphName: \$graphName})",
                 **row
             )
 
@@ -142,7 +245,7 @@ process loadAlignmentsToDB {
         for index, row in edges.iterrows():
             session.run(
                 "MATCH (a:ALIGNMENT {nodeId: \$sourceNode, graphName: \$graphName}), (b:CHIMERA {query_id: \$qseqid, graphName: \$graphName}) "
-                "CREATE (a)-[r:ALIGNS {qseqid: \$qseqid, qstart: \$qstart, qend: \$qend, sstart: \$sstart, send: \$send, qseq: \$qseq, evalue: \$evalue, bitscore: \$bitscore, score: \$score, length: \$length, pident: \$pident, nident: \$nident, mismatch: \$mismatch, positive: \$positive, gapopen: \$gapopen, gaps: \$gaps, ppos: \$ppos, qframe: \$qframe, sframe: \$sframe, btop: \$btop, qcovs: \$qcovs, qcovhsp: \$qcovhsp, graphName: \$graphName}]->(b)",
+                "CREATE (a)-[r:ALIGNS_TO {qseqid: \$qseqid, qstart: \$qstart, qend: \$qend, sstart: \$sstart, send: \$send, qseq: \$qseq, evalue: \$evalue, bitscore: \$bitscore, score: \$score, length: \$length, pident: \$pident, nident: \$nident, mismatch: \$mismatch, positive: \$positive, gapopen: \$gapopen, gaps: \$gaps, ppos: \$ppos, qframe: \$qframe, sframe: \$sframe, btop: \$btop, qcovs: \$qcovs, qcovhsp: \$qcovhsp, graphName: \$graphName}]->(b)",
                 **row
             )
     """
@@ -156,9 +259,19 @@ workflow interactomeModeling_wf {
     alignments_ch
 
     main:
-    loadResults_ch = loadChimerasToDB(chimeras_ch)
+    chimerasWOrigin_ch = extractRNAOriginFromChimeras(chimeras_ch)
+    allChimeras_ch = chimerasWOrigin_ch.collectFile(
+        name: 'origins.csv',
+        keepHeader: true,
+    )
+
+    loadOriginsResult_ch = loadOriginsToDB(allChimeras_ch)
+
+    loadChumerasInputs_ch = chimerasWOrigin_ch.combine(loadOriginsResult_ch)
+
+    chimerasLoadResults_ch = loadChimerasToDB(loadChumerasInputs_ch)
     
-    keyALignments_ch = alignments_ch.map(it-> [it.baseName.split('-')[0], it]).join(loadResults_ch)
+    keyALignments_ch = alignments_ch.map(it-> [it.baseName.split('-')[0], it]).join(chimerasLoadResults_ch)
     loadAlignmentsToDB(keyALignments_ch)
 }
 

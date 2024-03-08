@@ -95,13 +95,13 @@ process flattenDataFile {
         dfRNA1 = df[[c for c in df.columns if 'RNA2' not in c]]
         rna1columnsMap = {c:c.strip('RNA1').strip() for c in dfRNA1.columns if 'RNA1' in c}
         dfRNA1 = dfRNA1.rename(columns=rna1columnsMap)
-        dfRNA1['origin'] = 'RNA1'
+        dfRNA1['chimera_origin'] = 'RNA1'
         dfRNA1['chimera_idx'] = dfRNA1.index
         
         dfRNA2 = df[[c for c in df.columns if 'RNA1' not in c]]
         rna2columnsMap = {c:c.strip('RNA2').strip() for c in dfRNA2.columns if 'RNA2' in c}
         dfRNA2 = dfRNA2.rename(columns=rna2columnsMap)
-        dfRNA2['origin'] = 'RNA2'
+        dfRNA2['chimera_origin'] = 'RNA2'
         dfRNA2['chimera_idx'] = dfRNA2.index
         
         flattened_df = pd.concat([dfRNA1, dfRNA2], ignore_index=True)

@@ -1,23 +1,50 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+// GLOBAL PARAMS
+genomeFilename = "GCF_000210855.2_ASM21085v2_genomic.fna"
+cdsFilename = "cds_from_genomic.fna"
 params.output_dir = "$baseDir/output"
 params.data_file = "$baseDir/data/Liu_sup5_data.xlsx"
 params.cache_dir = "$baseDir/data"
-params.queries_files_chunk_sizes = 20
-
 params.salmonella_id = "GCF_000210855.2"
+// BLAST PARAMS
+params.queriesChunckSize = 10
+params.wordSizes_list = [11]
+params.blastCullingLimit = 2
+params.blastHSQSLimit = 50
+params.minAlignmentCoverageThreshold = 0.9
+params.minPidentThreshold = 0.9
+// GRAPH PARAMS
+params.neo4jURI = "bolt://neo4j:7687"
+params.neo4jUser = "neo4j"
+params.neo4jPassword = "Password"
+params.neo4jDB = "neo4j"
 
-genomeFilename = "GCF_000210855.2_ASM21085v2_genomic.fna"
-cdsFilename = "cds_from_genomic.fna"
-params.blast_word_sizes = "11"
+include { blast_wf as blastWFFullGenome } from "./module/blast" params(
+    queriesChunckSize: params.queriesChunckSize,
+    wordSizes_list: params.wordSizes_list,
+    blastCullingLimit: params.blastCullingLimit,
+    blastHSQSLimit: params.blastHSQSLimit,
+    minAlignmentCoverageThreshold: params.minAlignmentCoverageThreshold,
+    minPidentThreshold: params.minPidentThreshold
+)
 
-include { blast_wf as blastWFFullGenome } from "./module/blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
-                                                    wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
-include { blast_wf as blastWFCDS } from "./module/blast" params(  queriesChunckSize: params.queries_files_chunk_sizes,
-                                                    wordSizes_list: getWordSizesFromStringParam(params.blast_word_sizes))
+include { blast_wf as blastWFCDS } from "./module/blast" params(
+    queriesChunckSize: params.queriesChunckSize,
+    wordSizes_list: params.wordSizes_list,
+    blastCullingLimit: params.blastCullingLimit,
+    blastHSQSLimit: params.blastHSQSLimit,
+    minAlignmentCoverageThreshold: params.minAlignmentCoverageThreshold,
+    minPidentThreshold: params.minPidentThreshold
+)
 
-include { interactomeModeling_wf as graphModelingWF } from "./module/graph" params(kmer_sz: 4)
+include { interactomeModeling_wf as graphModelingWF } from "./module/graph" params(
+    neo4jURI: params.neo4jURI,
+    neo4jUser: params.neo4jUser,
+    neo4jPassword: params.neo4jPassword,
+    neo4jDB: params.neo4jDB
+    )
 
 def getScenarioWordSizeKey(queryFilePath) {
     return queryFilePath.getName().split("\\.")[0]
@@ -30,10 +57,6 @@ def getScenarionFromFilename(filename) {
     } else {
         return null
     }
-}
-
-def getWordSizesFromStringParam(word_sizes_str) {
-    return ((String)word_sizes_str).split(',').collect {it as Integer}
 }
 
 process downloadSalmonellaDataset {
@@ -189,6 +212,7 @@ workflow {
     )
 
     queries_ch = extractAlignmentQueries(chimeras_ch)
+    queries_ch.view(it -> "${it.baseName} : queries ${it.countFasta()}")
     queries_ch.collectFile(
         storeDir: "$params.output_dir/queries"
     )
@@ -196,7 +220,7 @@ workflow {
     // run blast against full genome
     blastFullGenomeResults_ch = blastWFFullGenome(queries_ch, salmonellaGenome_ch)
     fullGenomeAlignments_ch = blastFullGenomeResults_ch.aligmentsResults_ch
-    fullGenomeAlignments_ch.countLines().view(it -> "Number genomic alginments ${it}")
+    fullGenomeAlignments_ch.view(it -> "${it.baseName}: full genome alginments ${it.countLines()}")
     fullGenomeAlignments_ch.collectFile(
         storeDir: "$params.output_dir/full_genome_alignments"
     )
@@ -204,7 +228,7 @@ workflow {
     // run blast against cds
     blastResultsCDS_ch = blastWFCDS(queries_ch, salmonellaCDS_ch)
     cds_alignments_ch = blastResultsCDS_ch.aligmentsResults_ch
-    cds_alignments_ch.countLines().view(it -> "Number CDS alginments ${it}")
+    cds_alignments_ch.view(it -> "${it.baseName}: CDS alginments ${it.countLines()}")
     cds_alignments_ch.collectFile(
         storeDir: "$params.output_dir/cds_alignments"
     )
@@ -223,7 +247,6 @@ workflow {
                         .combine(keyFileChimeras_ch, by:0)
                         .map(it -> [it[1],it[2],it[3],it[4]] )
 
-    filesToMerge.count().view(it -> "Merging ${it} files")
     // filesToMerge.view()
     mergedResults_ch = mergeChimerasAndAlignments(filesToMerge)
     mergedResults_ch.collectFile(

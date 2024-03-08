@@ -5,7 +5,8 @@ params.queriesChunckSize = 10
 params.wordSizes_list = [4,7,11,15]
 params.blastCullingLimit = 2
 params.blastHSQSLimit = 50
-params.minAlignmentCoverage = 0.9
+params.minAlignmentCoverageThreshold = 0.9
+params.minPidentThreshold = 0.9
 
 blastOuputColumns = ['qseqid', 'qgi', 'qacc', 'qaccver', 'qlen', 'sseqid', 'sallseqid', 'sgi', 'sallgi', 'sacc', 'saccver', 'sallacc', 'slen', 'qstart', 'qend', 'sstart', 'send', 'qseq', 'sseq', 'evalue', 'bitscore', 'score', 'length', 'pident', 'nident', 'mismatch', 'positive', 'gapopen', 'gaps', 'ppos', 'frames', 'qframe', 'sframe', 'btop', 'staxids', 'sscinames', 'scomnames', 'sblastnames', 'sskingdoms', 'stitle', 'salltitles', 'sstrand', 'qcovs', 'qcovhsp']
 
@@ -48,17 +49,25 @@ process alignLocally {
     """
 }
 
-process filterHIghCovarageAlignments {
+process filterResults {
     input:
     file alignmentsFile
 
     output:
-    file highCovarageAlignmentsFile
+    file filteredAlignmentsFile
 
     script:
-    highCovarageAlignmentsFile = "${alignmentsFile.baseName}_highCovarage.tsv"
+    filteredAlignmentsFile = "${alignmentsFile.baseName}_filtered.tsv"
     """
-    awk -F'\t' '{if (\$41 > ${params.minAlignmentCoverage}) print}' ${alignmentsFile} > ${highCovarageAlignmentsFile}
+    #!/usr/bin/env python3
+
+    import pandas as pd
+
+    alignments_df = pd.read_csv("${alignmentsFile}", sep='\t')
+
+    filtered_df = alignments_df.query('qcovs >= ${100*params.minAlignmentCoverageThreshold} and pident >= ${100*params.minPidentThreshold}')
+
+    filtered_df.to_csv("${filteredAlignmentsFile}", sep='\t', index=False)
     """
 }
 
@@ -83,9 +92,9 @@ workflow blast_wf {
                             keepHeader: true,
                         )
 
-    highCovarageAlignments_ch = filterHIghCovarageAlignments(groupedAlignments_ch)
+    filteredAlignments_ch = filterResults(groupedAlignments_ch)
 
     emit:
-    aligmentsResults_ch = highCovarageAlignments_ch
+    aligmentsResults_ch = filteredAlignments_ch
 }
 
